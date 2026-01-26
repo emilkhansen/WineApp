@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WineForm } from "@/components/wines/wine-form";
 import { uploadWineImage } from "@/actions/wines";
-import { extractWineFromImage } from "@/lib/claude";
+import { extractWineFromImage } from "@/lib/vision";
 import type { ExtractedWineData } from "@/lib/types";
 import { toast } from "sonner";
 

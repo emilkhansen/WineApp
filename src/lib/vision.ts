@@ -1,39 +1,23 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ExtractedWineData } from "@/lib/types";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 export async function extractWineFromImage(
   base64Image: string,
   mimeType: string
 ): Promise<{ data?: ExtractedWineData; error?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { error: "Anthropic API key not configured" };
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return { error: "Gemini API key not configured" };
   }
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-                data: base64Image,
-              },
-            },
-            {
-              type: "text",
-              text: `Analyze this wine label image and extract the following information. Return ONLY a valid JSON object with these fields (use null for any field you cannot determine with confidence):
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `Analyze this wine label image and extract the following information. Return ONLY a valid JSON object with these fields (use null for any field you cannot determine with confidence):
 
 {
   "name": "the wine's name",
@@ -54,20 +38,23 @@ Important:
 - Use null for fields you cannot determine
 - vintage should be a number, not a string
 - alcohol_percentage should be a number (e.g., 13.5 not "13.5%")
-- Return ONLY the JSON object, no other text`,
-            },
-          ],
-        },
-      ],
-    });
+- Return ONLY the JSON object, no other text or markdown`;
 
-    const textContent = response.content.find((block) => block.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      return { error: "No text response from Claude" };
-    }
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Image,
+        },
+      },
+      prompt,
+    ]);
+
+    const response = result.response;
+    const text = response.text();
 
     // Parse the JSON response
-    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return { error: "Could not parse wine data from response" };
     }
@@ -84,7 +71,7 @@ Important:
 
     return { data: cleanedData };
   } catch (error) {
-    console.error("Claude API error:", error);
+    console.error("Gemini API error:", error);
     if (error instanceof Error) {
       return { error: error.message };
     }
