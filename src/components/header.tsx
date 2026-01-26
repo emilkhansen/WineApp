@@ -34,6 +34,7 @@ export function Header({ userEmail }: HeaderProps) {
   };
 
   const navigation = [
+    { name: "Dashboard", href: "/" },
     { name: "My Wines", href: "/wines" },
     { name: "Tastings", href: "/tastings" },
   ];
