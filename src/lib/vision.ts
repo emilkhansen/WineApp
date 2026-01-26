@@ -15,7 +15,7 @@ export async function extractWineFromImage(
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `Analyze this wine label image and extract the following information. Return ONLY a valid JSON object with these fields (use null for any field you cannot determine with confidence):
 
