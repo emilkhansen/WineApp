@@ -4,7 +4,6 @@ import { ArrowLeft, Edit, Wine as WineIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { getWine } from "@/actions/wines";
 import { getTastingsForWine } from "@/actions/tastings";
 import { StockAdjuster } from "@/components/wines/stock-adjuster";
@@ -68,9 +67,10 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
                   )}
                   <div className="flex flex-wrap gap-2">
                     {wine.vintage && <Badge variant="secondary">{wine.vintage}</Badge>}
+                    {wine.color && <Badge variant="secondary">{wine.color}</Badge>}
                     {wine.region && <Badge variant="outline">{wine.region}</Badge>}
-                    {wine.grape_variety && (
-                      <Badge variant="outline">{wine.grape_variety}</Badge>
+                    {wine.grape && (
+                      <Badge variant="outline">{wine.grape}</Badge>
                     )}
                   </div>
                 </div>
@@ -96,36 +96,13 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
                     <dd className="font-medium">{wine.vineyard}</dd>
                   </div>
                 )}
-                {wine.alcohol_percentage && (
-                  <div>
-                    <dt className="text-sm text-muted-foreground">Alcohol</dt>
-                    <dd className="font-medium">{wine.alcohol_percentage}%</dd>
-                  </div>
-                )}
-                {wine.bottle_size && (
+                {wine.size && (
                   <div>
                     <dt className="text-sm text-muted-foreground">Bottle Size</dt>
-                    <dd className="font-medium">{wine.bottle_size}</dd>
-                  </div>
-                )}
-                {wine.importer && (
-                  <div>
-                    <dt className="text-sm text-muted-foreground">Importer</dt>
-                    <dd className="font-medium">{wine.importer}</dd>
+                    <dd className="font-medium">{wine.size}</dd>
                   </div>
                 )}
               </dl>
-              {wine.winemaker_notes && (
-                <>
-                  <Separator className="my-4" />
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Winemaker Notes
-                    </p>
-                    <p className="text-sm">{wine.winemaker_notes}</p>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
 

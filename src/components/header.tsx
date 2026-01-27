@@ -37,6 +37,7 @@ export function Header({ userEmail }: HeaderProps) {
     { name: "Dashboard", href: "/" },
     { name: "My Wines", href: "/wines" },
     { name: "Tastings", href: "/tastings" },
+    { name: "Friends", href: "/friends" },
   ];
 
   const userInitial = userEmail ? userEmail[0].toUpperCase() : "U";

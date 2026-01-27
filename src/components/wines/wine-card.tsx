@@ -36,6 +36,9 @@ export function WineCard({ wine }: WineCardProps) {
                 {wine.vintage && (
                   <Badge variant="secondary">{wine.vintage}</Badge>
                 )}
+                {wine.color && (
+                  <Badge variant="secondary">{wine.color}</Badge>
+                )}
                 {wine.region && (
                   <Badge variant="outline">{wine.region}</Badge>
                 )}
@@ -45,9 +48,9 @@ export function WineCard({ wine }: WineCardProps) {
         </CardContent>
         <CardFooter className="pt-0">
           <div className="flex items-center justify-between w-full text-sm">
-            {wine.grape_variety && (
+            {wine.grape && (
               <span className="text-muted-foreground truncate">
-                {wine.grape_variety}
+                {wine.grape}
               </span>
             )}
             <Badge variant={wine.stock > 0 ? "default" : "secondary"}>

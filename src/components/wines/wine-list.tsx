@@ -16,7 +16,8 @@ export function WineList({ wines }: WineListProps) {
   const [filters, setFilters] = useState<WineFilters>({
     search: "",
     region: "",
-    grapeVariety: "",
+    grape: "",
+    color: "",
     stockStatus: "all",
   });
 
@@ -29,7 +30,8 @@ export function WineList({ wines }: WineListProps) {
           wine.name.toLowerCase().includes(searchLower) ||
           wine.producer?.toLowerCase().includes(searchLower) ||
           wine.region?.toLowerCase().includes(searchLower) ||
-          wine.grape_variety?.toLowerCase().includes(searchLower);
+          wine.grape?.toLowerCase().includes(searchLower) ||
+          wine.appellation?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
 
@@ -38,8 +40,13 @@ export function WineList({ wines }: WineListProps) {
         return false;
       }
 
-      // Grape variety filter
-      if (filters.grapeVariety && wine.grape_variety !== filters.grapeVariety) {
+      // Grape filter
+      if (filters.grape && wine.grape !== filters.grape) {
+        return false;
+      }
+
+      // Color filter
+      if (filters.color && wine.color !== filters.color) {
         return false;
       }
 

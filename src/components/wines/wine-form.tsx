@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -16,6 +15,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { WINE_REGIONS } from "@/data/regions";
 import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
+import { WINE_COLORS } from "@/data/colors";
+import { WINE_CRUS } from "@/data/crus";
 import type { Wine, WineFormData } from "@/lib/types";
 import { createWine, updateWine } from "@/actions/wines";
 import { toast } from "sonner";
@@ -34,13 +35,12 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
     producer: wine?.producer || initialData?.producer || "",
     vintage: wine?.vintage || initialData?.vintage || undefined,
     region: wine?.region || initialData?.region || "",
-    grape_variety: wine?.grape_variety || initialData?.grape_variety || "",
-    alcohol_percentage: wine?.alcohol_percentage || initialData?.alcohol_percentage || undefined,
-    bottle_size: wine?.bottle_size || initialData?.bottle_size || "",
+    grape: wine?.grape || initialData?.grape || "",
     appellation: wine?.appellation || initialData?.appellation || "",
-    importer: wine?.importer || initialData?.importer || "",
     vineyard: wine?.vineyard || initialData?.vineyard || "",
-    winemaker_notes: wine?.winemaker_notes || initialData?.winemaker_notes || "",
+    cru: wine?.cru || initialData?.cru || "",
+    color: wine?.color || initialData?.color || "",
+    size: wine?.size || initialData?.size || "",
     stock: wine?.stock || initialData?.stock || 1,
   });
 
@@ -104,7 +104,7 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="vintage">Vintage</Label>
               <Input
@@ -117,6 +117,27 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
                 placeholder="e.g., 2019"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="color">Color</Label>
+              <Select
+                value={formData.color}
+                onValueChange={(value) => handleChange("color", value)}
+              >
+                <SelectTrigger id="color">
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {WINE_COLORS.map((color) => (
+                    <SelectItem key={color} value={color}>
+                      {color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="region">Region</Label>
               <Select
@@ -136,12 +157,12 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="grape_variety">Grape Variety</Label>
+              <Label htmlFor="grape">Grape</Label>
               <Select
-                value={formData.grape_variety}
-                onValueChange={(value) => handleChange("grape_variety", value)}
+                value={formData.grape}
+                onValueChange={(value) => handleChange("grape", value)}
               >
-                <SelectTrigger id="grape_variety">
+                <SelectTrigger id="grape">
                   <SelectValue placeholder="Select grape" />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,49 +177,6 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
           </div>
 
           {/* Additional Details */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="alcohol_percentage">Alcohol %</Label>
-              <Input
-                id="alcohol_percentage"
-                type="number"
-                step="0.1"
-                min="0"
-                max="100"
-                value={formData.alcohol_percentage || ""}
-                onChange={(e) => handleChange("alcohol_percentage", e.target.value ? parseFloat(e.target.value) : undefined)}
-                placeholder="e.g., 13.5"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bottle_size">Bottle Size</Label>
-              <Select
-                value={formData.bottle_size}
-                onValueChange={(value) => handleChange("bottle_size", value)}
-              >
-                <SelectTrigger id="bottle_size">
-                  <SelectValue placeholder="Select size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="375ml">375ml (Half)</SelectItem>
-                  <SelectItem value="750ml">750ml (Standard)</SelectItem>
-                  <SelectItem value="1.5L">1.5L (Magnum)</SelectItem>
-                  <SelectItem value="3L">3L (Double Magnum)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                value={formData.stock || 1}
-                onChange={(e) => handleChange("stock", parseInt(e.target.value) || 0)}
-              />
-            </div>
-          </div>
-
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="appellation">Appellation</Label>
@@ -210,34 +188,63 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vineyard">Vineyard</Label>
+              <Label htmlFor="cru">Cru Classification</Label>
+              <Select
+                value={formData.cru}
+                onValueChange={(value) => handleChange("cru", value)}
+              >
+                <SelectTrigger id="cru">
+                  <SelectValue placeholder="Select cru" />
+                </SelectTrigger>
+                <SelectContent>
+                  {WINE_CRUS.map((cru) => (
+                    <SelectItem key={cru} value={cru}>
+                      {cru}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="vineyard">Vineyard / Lieu-dit</Label>
               <Input
                 id="vineyard"
                 value={formData.vineyard}
                 onChange={(e) => handleChange("vineyard", e.target.value)}
-                placeholder="e.g., Grand Cru Classé"
+                placeholder="e.g., Les Clos, Clos de Vougeot"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="size">Bottle Size</Label>
+              <Select
+                value={formData.size}
+                onValueChange={(value) => handleChange("size", value)}
+              >
+                <SelectTrigger id="size">
+                  <SelectValue placeholder="Select size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="375ml">375ml (Half)</SelectItem>
+                  <SelectItem value="750ml">750ml (Standard)</SelectItem>
+                  <SelectItem value="1.5L">1.5L (Magnum)</SelectItem>
+                  <SelectItem value="3L">3L (Double Magnum)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="importer">Importer</Label>
+            <Label htmlFor="stock">Stock</Label>
             <Input
-              id="importer"
-              value={formData.importer}
-              onChange={(e) => handleChange("importer", e.target.value)}
-              placeholder="e.g., Wine Imports Inc."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="winemaker_notes">Winemaker Notes</Label>
-            <Textarea
-              id="winemaker_notes"
-              value={formData.winemaker_notes}
-              onChange={(e) => handleChange("winemaker_notes", e.target.value)}
-              placeholder="Notes from the producer or back label..."
-              rows={3}
+              id="stock"
+              type="number"
+              min="0"
+              value={formData.stock || 1}
+              onChange={(e) => handleChange("stock", parseInt(e.target.value) || 0)}
+              className="w-32"
             />
           </div>
 

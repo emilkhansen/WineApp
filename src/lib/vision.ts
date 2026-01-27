@@ -1,57 +1,106 @@
 "use server";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { ExtractedWineData } from "@/lib/types";
+import Anthropic from "@anthropic-ai/sdk";
+import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 
 export async function extractWineFromImage(
   base64Image: string,
   mimeType: string
 ): Promise<{ data?: ExtractedWineData; error?: string }> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    return { error: "Gemini API key not configured" };
+    return { error: "Anthropic API key not configured" };
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
+    const anthropic = new Anthropic({ apiKey });
 
-    const prompt = `Analyze this wine label image and extract the following information. Return ONLY a valid JSON object with these fields (use null for any field you cannot determine with confidence):
+    const prompt = `You are an expert French wine sommelier analyzing a wine label. Extract information following French wine conventions.
 
+FRENCH WINE LABEL RULES:
+1. NAME: For French wines, the name is typically "Château X", "Domaine X", "Clos X", or the appellation itself. The prominent text on the label is usually the name.
+
+2. PRODUCER: Often the same as the name for estate wines. Look for "Mis en bouteille au château/domaine" (estate bottled) or a separate négociant name.
+
+3. APPELLATION: Look for "Appellation [X] Contrôlée" or "AOP [X]" or "AOC [X]". This is the official designation.
+
+4. CRU (CLASSIFICATION): Extract as a SEPARATE field. Look for:
+   - Burgundy: "Grand Cru", "Premier Cru" / "1er Cru"
+   - Bordeaux: "Premier Grand Cru Classé", "Grand Cru Classé", "Cru Classé", "Cru Bourgeois"
+   - Médoc 1855: "Premier Cru", "Deuxième Cru", etc.
+   - Alsace: "Alsace Grand Cru"
+   - Champagne: "Grand Cru", "Premier Cru"
+
+5. VINEYARD: The specific lieu-dit or vineyard name ONLY (NOT the classification). Examples: "Les Clos", "Clos de Vougeot", "La Tâche"
+
+6. VINTAGE: The 4-digit year prominently displayed.
+
+7. COLOR: Infer from appellation when possible:
+   - Sauternes, Barsac = Dessert (sweet white)
+   - Champagne = Sparkling
+   - Most Burgundy reds = Pinot Noir (Red)
+   - If "Rosé" or "Clairet" appears = Rosé
+   - Look for "Rouge" (red), "Blanc" (white)
+
+8. GRAPE: Only include if explicitly stated. Many French wines don't list grapes.
+
+9. REGION: Infer from appellation:
+   - Margaux, Saint-Émilion, Pauillac, Médoc → Bordeaux
+   - Gevrey-Chambertin, Meursault, Chablis → Burgundy
+   - Châteauneuf-du-Pape, Côtes du Rhône → Rhône Valley
+   - Sancerre, Vouvray, Muscadet → Loire Valley
+   - Riesling/Gewurztraminer appellations → Alsace
+
+Return ONLY valid JSON with these fields (use null for fields you cannot determine):
 {
-  "name": "the wine's name",
-  "producer": "the winery or producer name",
+  "name": "the wine's name (Château X, Domaine X, or appellation)",
+  "producer": "the producer/négociant if different from name",
   "vintage": 2020,
-  "region": "the wine region",
-  "grape_variety": "the grape variety or blend",
-  "alcohol_percentage": 13.5,
-  "bottle_size": "750ml",
-  "appellation": "the appellation or classification",
-  "importer": "the importer name if visible",
-  "vineyard": "specific vineyard name if mentioned",
-  "winemaker_notes": "any tasting notes or descriptions visible on the label"
-}
+  "region": "Bordeaux|Burgundy|Champagne|Loire Valley|Rhône Valley|Alsace|Provence|Languedoc-Roussillon|Beaujolais|Jura|Savoie|Sud-Ouest",
+  "grape": "only if explicitly stated on label",
+  "appellation": "the AOC/AOP designation",
+  "vineyard": "specific lieu-dit or vineyard name only",
+  "cru": "Grand Cru|Premier Cru|Grand Cru Classé|Cru Bourgeois|etc.",
+  "color": "Red|White|Rosé|Sparkling|Dessert",
+  "size": "750ml"
+}`;
 
-Important:
-- Only include information you can clearly see on the label
-- Use null for fields you cannot determine
-- vintage should be a number, not a string
-- alcohol_percentage should be a number (e.g., 13.5 not "13.5%")
-- Return ONLY the JSON object, no other text or markdown`;
-
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Image,
+    const message = await anthropic.messages.create({
+      model: "claude-opus-4-5-20251101",
+      max_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType as
+                  | "image/jpeg"
+                  | "image/png"
+                  | "image/gif"
+                  | "image/webp",
+                data: base64Image,
+              },
+            },
+            {
+              type: "text",
+              text: prompt,
+            },
+          ],
         },
-      },
-      prompt,
-    ]);
+      ],
+    });
 
-    const response = result.response;
-    const text = response.text();
+    // Extract text from the response
+    const textContent = message.content.find((block) => block.type === "text");
+    if (!textContent || textContent.type !== "text") {
+      return { error: "No text response from Claude" };
+    }
+
+    const text = textContent.text;
 
     // Parse the JSON response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -71,10 +120,146 @@ Important:
 
     return { data: cleanedData };
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("Claude API error:", error);
     if (error instanceof Error) {
       return { error: error.message };
     }
     return { error: "Failed to analyze wine label" };
+  }
+}
+
+export async function extractWinesFromImage(
+  base64Image: string,
+  mimeType: string
+): Promise<{ data?: ExtractedWineWithId[]; error?: string }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    return { error: "Anthropic API key not configured" };
+  }
+
+  try {
+    const anthropic = new Anthropic({ apiKey });
+
+    const prompt = `You are an expert French wine sommelier analyzing an image that may contain ONE OR MORE wine bottles/labels. Extract information for ALL visible wines.
+
+IMPORTANT: Count how many distinct wine bottles or labels are visible in the image. Extract data for EACH one.
+
+FRENCH WINE LABEL RULES:
+1. NAME: For French wines, the name is typically "Château X", "Domaine X", "Clos X", or the appellation itself.
+
+2. PRODUCER: Often the same as the name for estate wines. Look for "Mis en bouteille au château/domaine" (estate bottled) or a separate négociant name.
+
+3. APPELLATION: Look for "Appellation [X] Contrôlée" or "AOP [X]" or "AOC [X]".
+
+4. CRU (CLASSIFICATION): Extract as a SEPARATE field. Look for:
+   - Burgundy: "Grand Cru", "Premier Cru" / "1er Cru"
+   - Bordeaux: "Premier Grand Cru Classé", "Grand Cru Classé", "Cru Classé", "Cru Bourgeois"
+   - Médoc 1855: "Premier Cru", "Deuxième Cru", etc.
+   - Alsace: "Alsace Grand Cru"
+
+5. VINEYARD: The specific lieu-dit or vineyard name ONLY (NOT the classification).
+
+6. VINTAGE: The 4-digit year prominently displayed.
+
+7. COLOR: Infer from appellation when possible.
+
+8. GRAPE: Only include if explicitly stated.
+
+9. REGION: Infer from appellation.
+
+10. POSITION: Describe where this wine is in the image (e.g., "left bottle", "center", "right bottle", "top left", etc.)
+
+Return ONLY valid JSON array with ALL wines found. Even if there's only one wine, return an array.
+[
+  {
+    "position": "left bottle",
+    "name": "wine name",
+    "producer": "producer if different from name",
+    "vintage": 2020,
+    "region": "Bordeaux|Burgundy|etc.",
+    "grape": "only if stated",
+    "appellation": "AOC/AOP designation",
+    "vineyard": "lieu-dit name only",
+    "cru": "classification if any",
+    "color": "Red|White|Rosé|Sparkling|Dessert",
+    "size": "750ml"
+  }
+]
+
+Use null for fields you cannot determine.`;
+
+    const message = await anthropic.messages.create({
+      model: "claude-opus-4-5-20251101",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType as
+                  | "image/jpeg"
+                  | "image/png"
+                  | "image/gif"
+                  | "image/webp",
+                data: base64Image,
+              },
+            },
+            {
+              type: "text",
+              text: prompt,
+            },
+          ],
+        },
+      ],
+    });
+
+    const textContent = message.content.find((block) => block.type === "text");
+    if (!textContent || textContent.type !== "text") {
+      return { error: "No text response from Claude" };
+    }
+
+    const text = textContent.text;
+
+    // Parse the JSON array response
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      return { error: "Could not parse wine data from response" };
+    }
+
+    const extracted = JSON.parse(jsonMatch[0]) as Array<ExtractedWineData & { position?: string; cru?: string }>;
+
+    // Clean up and add temp IDs
+    const cleanedWines: ExtractedWineWithId[] = extracted.map((wine, index) => {
+      const cleanedWine: ExtractedWineWithId = {
+        tempId: `wine-${Date.now()}-${index}`,
+        position: wine.position || `Wine ${index + 1}`,
+      };
+
+      // Copy over non-null, non-empty values
+      if (wine.name) cleanedWine.name = wine.name;
+      if (wine.producer) cleanedWine.producer = wine.producer;
+      if (wine.vintage) cleanedWine.vintage = wine.vintage;
+      if (wine.region) cleanedWine.region = wine.region;
+      if (wine.grape) cleanedWine.grape = wine.grape;
+      if (wine.appellation) cleanedWine.appellation = wine.appellation;
+      if (wine.vineyard) cleanedWine.vineyard = wine.vineyard;
+      if (wine.cru) cleanedWine.cru = wine.cru;
+      if (wine.color) cleanedWine.color = wine.color;
+      if (wine.size) cleanedWine.size = wine.size;
+
+      return cleanedWine;
+    });
+
+    return { data: cleanedWines };
+  } catch (error) {
+    console.error("Claude API error:", error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: "Failed to analyze wine labels" };
   }
 }

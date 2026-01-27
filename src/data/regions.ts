@@ -1,81 +1,96 @@
 export const WINE_REGIONS = [
-  // France
+  // Bordeaux
   "Bordeaux",
+  "Bordeaux - Left Bank",
+  "Bordeaux - Right Bank",
+  "Médoc",
+  "Haut-Médoc",
+  "Saint-Estèphe",
+  "Pauillac",
+  "Saint-Julien",
+  "Margaux",
+  "Pessac-Léognan",
+  "Graves",
+  "Sauternes",
+  "Barsac",
+  "Saint-Émilion",
+  "Pomerol",
+  "Fronsac",
+
+  // Burgundy
   "Burgundy",
+  "Côte de Nuits",
+  "Côte de Beaune",
+  "Chablis",
+  "Côte Chalonnaise",
+  "Mâconnais",
+
+  // Champagne
   "Champagne",
+
+  // Loire Valley
   "Loire Valley",
+  "Sancerre",
+  "Pouilly-Fumé",
+  "Vouvray",
+  "Chinon",
+  "Muscadet",
+  "Anjou",
+  "Savennières",
+
+  // Rhône Valley
   "Rhône Valley",
+  "Rhône Valley - Northern",
+  "Rhône Valley - Southern",
+  "Côte-Rôtie",
+  "Hermitage",
+  "Crozes-Hermitage",
+  "Saint-Joseph",
+  "Cornas",
+  "Châteauneuf-du-Pape",
+  "Gigondas",
+  "Vacqueyras",
+  "Côtes du Rhône",
+
+  // Alsace
   "Alsace",
+
+  // Provence
   "Provence",
+  "Bandol",
+  "Cassis",
+  "Côtes de Provence",
+
+  // Languedoc-Roussillon
   "Languedoc-Roussillon",
+  "Languedoc",
+  "Roussillon",
+  "Corbières",
+  "Minervois",
+  "Fitou",
 
-  // Italy
-  "Tuscany",
-  "Piedmont",
-  "Veneto",
-  "Sicily",
-  "Lombardy",
-  "Trentino-Alto Adige",
+  // Beaujolais
+  "Beaujolais",
+  "Beaujolais Crus",
+  "Morgon",
+  "Fleurie",
+  "Moulin-à-Vent",
 
-  // Spain
-  "Rioja",
-  "Ribera del Duero",
-  "Priorat",
-  "Rías Baixas",
-  "Penedès",
-  "Jerez",
+  // Jura
+  "Jura",
+  "Arbois",
+  "Château-Chalon",
 
-  // Portugal
-  "Douro Valley",
-  "Alentejo",
-  "Vinho Verde",
-  "Dão",
+  // Savoie
+  "Savoie",
 
-  // Germany
-  "Mosel",
-  "Rheingau",
-  "Pfalz",
-  "Baden",
-
-  // Austria
-  "Wachau",
-  "Burgenland",
-  "Styria",
-
-  // USA
-  "Napa Valley",
-  "Sonoma County",
-  "Willamette Valley",
-  "Paso Robles",
-  "Santa Barbara County",
-  "Finger Lakes",
-
-  // Argentina
-  "Mendoza",
-  "Salta",
-  "Patagonia",
-
-  // Chile
-  "Maipo Valley",
-  "Colchagua Valley",
-  "Casablanca Valley",
-
-  // Australia
-  "Barossa Valley",
-  "Margaret River",
-  "Yarra Valley",
-  "Hunter Valley",
-  "McLaren Vale",
-
-  // New Zealand
-  "Marlborough",
-  "Central Otago",
-  "Hawke's Bay",
-
-  // South Africa
-  "Stellenbosch",
-  "Franschhoek",
-  "Swartland",
+  // Sud-Ouest
+  "Sud-Ouest",
+  "Cahors",
+  "Madiran",
+  "Bergerac",
+  "Jurançon",
+  "Gaillac",
 
   // Other
   "Other",

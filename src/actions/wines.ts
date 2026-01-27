@@ -66,13 +66,12 @@ export async function createWine(formData: WineFormData, imageUrl?: string) {
       producer: formData.producer || null,
       vintage: formData.vintage || null,
       region: formData.region || null,
-      grape_variety: formData.grape_variety || null,
-      alcohol_percentage: formData.alcohol_percentage || null,
-      bottle_size: formData.bottle_size || null,
+      grape: formData.grape || null,
       appellation: formData.appellation || null,
-      importer: formData.importer || null,
       vineyard: formData.vineyard || null,
-      winemaker_notes: formData.winemaker_notes || null,
+      cru: formData.cru || null,
+      color: formData.color || null,
+      size: formData.size || null,
       image_url: imageUrl || null,
       stock: formData.stock || 1,
     })
@@ -103,13 +102,12 @@ export async function updateWine(id: string, formData: WineFormData) {
       producer: formData.producer || null,
       vintage: formData.vintage || null,
       region: formData.region || null,
-      grape_variety: formData.grape_variety || null,
-      alcohol_percentage: formData.alcohol_percentage || null,
-      bottle_size: formData.bottle_size || null,
+      grape: formData.grape || null,
       appellation: formData.appellation || null,
-      importer: formData.importer || null,
       vineyard: formData.vineyard || null,
-      winemaker_notes: formData.winemaker_notes || null,
+      cru: formData.cru || null,
+      color: formData.color || null,
+      size: formData.size || null,
       stock: formData.stock,
     })
     .eq("id", id)
@@ -199,4 +197,45 @@ export async function uploadWineImage(file: File): Promise<{ url?: string; error
     .getPublicUrl(fileName);
 
   return { url: publicUrl };
+}
+
+export async function createWines(
+  wines: WineFormData[],
+  imageUrl?: string
+): Promise<{ data?: Wine[]; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const wineRecords = wines.map((formData) => ({
+    user_id: user.id,
+    name: formData.name,
+    producer: formData.producer || null,
+    vintage: formData.vintage || null,
+    region: formData.region || null,
+    grape: formData.grape || null,
+    appellation: formData.appellation || null,
+    vineyard: formData.vineyard || null,
+    cru: formData.cru || null,
+    color: formData.color || null,
+    size: formData.size || null,
+    image_url: imageUrl || null,
+    stock: formData.stock || 1,
+  }));
+
+  const { data, error } = await supabase
+    .from("wines")
+    .insert(wineRecords)
+    .select();
+
+  if (error) {
+    console.error("Error creating wines:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/wines");
+  return { data: data as Wine[] };
 }

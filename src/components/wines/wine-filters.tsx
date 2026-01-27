@@ -14,11 +14,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { WINE_REGIONS } from "@/data/regions";
 import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
+import { WINE_COLORS } from "@/data/colors";
 
 export interface WineFilters {
   search: string;
   region: string;
-  grapeVariety: string;
+  grape: string;
+  color: string;
   stockStatus: "all" | "in-stock" | "out-of-stock";
 }
 
@@ -39,12 +41,14 @@ export function WineFiltersComponent({
 
   const hasActiveFilters =
     filters.region !== "" ||
-    filters.grapeVariety !== "" ||
+    filters.grape !== "" ||
+    filters.color !== "" ||
     filters.stockStatus !== "all";
 
   const activeFilterCount = [
     filters.region !== "",
-    filters.grapeVariety !== "",
+    filters.grape !== "",
+    filters.color !== "",
     filters.stockStatus !== "all",
   ].filter(Boolean).length;
 
@@ -52,7 +56,8 @@ export function WineFiltersComponent({
     onFiltersChange({
       search: filters.search,
       region: "",
-      grapeVariety: "",
+      grape: "",
+      color: "",
       stockStatus: "all",
     });
   };
@@ -94,6 +99,25 @@ export function WineFiltersComponent({
       {showFilters && (
         <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
           <Select
+            value={filters.color || "all"}
+            onValueChange={(value) =>
+              onFiltersChange({ ...filters, color: value === "all" ? "" : value })
+            }
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="All Colors" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Colors</SelectItem>
+              {WINE_COLORS.map((color) => (
+                <SelectItem key={color} value={color}>
+                  {color}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
             value={filters.region || "all"}
             onValueChange={(value) =>
               onFiltersChange({ ...filters, region: value === "all" ? "" : value })
@@ -113,9 +137,9 @@ export function WineFiltersComponent({
           </Select>
 
           <Select
-            value={filters.grapeVariety || "all"}
+            value={filters.grape || "all"}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, grapeVariety: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, grape: value === "all" ? "" : value })
             }
           >
             <SelectTrigger className="w-48">

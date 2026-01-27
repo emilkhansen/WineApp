@@ -5,16 +5,14 @@ export interface Wine {
   producer: string | null;
   vintage: number | null;
   region: string | null;
-  grape_variety: string | null;
-  alcohol_percentage: number | null;
-  bottle_size: string | null;
+  grape: string | null;
   appellation: string | null;
-  importer: string | null;
   vineyard: string | null;
-  winemaker_notes: string | null;
-  image_url: string | null;
+  cru: string | null;
+  color: string | null;
+  size: string | null;
   stock: number;
-  is_public: boolean;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,13 +38,12 @@ export interface WineFormData {
   producer?: string;
   vintage?: number;
   region?: string;
-  grape_variety?: string;
-  alcohol_percentage?: number;
-  bottle_size?: string;
+  grape?: string;
   appellation?: string;
-  importer?: string;
   vineyard?: string;
-  winemaker_notes?: string;
+  cru?: string;
+  color?: string;
+  size?: string;
   stock?: number;
 }
 
@@ -64,11 +61,42 @@ export interface ExtractedWineData {
   producer?: string;
   vintage?: number;
   region?: string;
-  grape_variety?: string;
-  alcohol_percentage?: number;
-  bottle_size?: string;
+  grape?: string;
   appellation?: string;
-  importer?: string;
   vineyard?: string;
-  winemaker_notes?: string;
+  cru?: string;
+  color?: string;
+  size?: string;
+}
+
+export interface ExtractedWineWithId extends ExtractedWineData {
+  tempId: string;
+  position?: string;
+}
+
+// Friends Feature Types
+export interface Profile {
+  id: string;
+  username: string | null;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FriendshipStatus = 'pending' | 'accepted';
+
+export interface Friendship {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: FriendshipStatus;
+  created_at: string;
+}
+
+export interface FriendWithProfile extends Friendship {
+  profile: Profile;
+}
+
+export interface PendingRequest extends Friendship {
+  sender: Profile;
 }

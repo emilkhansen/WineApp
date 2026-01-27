@@ -5,15 +5,17 @@ import { Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WineForm } from "@/components/wines/wine-form";
+import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { uploadWineImage } from "@/actions/wines";
-import { extractWineFromImage } from "@/lib/vision";
-import type { ExtractedWineData } from "@/lib/types";
+import { extractWinesFromImage } from "@/lib/vision";
+import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function AddWinePage() {
-  const [step, setStep] = useState<"choose" | "scan" | "manual">("choose");
+  const [step, setStep] = useState<"choose" | "scan" | "manual" | "multi">("choose");
   const [scanning, setScanning] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedWineData | null>(null);
+  const [extractedWines, setExtractedWines] = useState<ExtractedWineWithId[]>([]);
   const [imageUrl, setImageUrl] = useState<string | undefined>();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,16 +39,39 @@ export default function AddWinePage() {
       // Convert file to base64 for Claude API
       const base64 = await fileToBase64(file);
 
-      // Extract wine data using Claude
-      const result = await extractWineFromImage(base64, file.type);
+      // Extract wine data using Claude (supports multiple wines)
+      const result = await extractWinesFromImage(base64, file.type);
 
       if (result.error) {
         toast.error(result.error);
         // Still proceed to form with image uploaded
         setExtractedData({});
-      } else if (result.data) {
-        setExtractedData(result.data);
-        toast.success("Wine information extracted successfully");
+      } else if (result.data && result.data.length > 0) {
+        if (result.data.length === 1) {
+          // Single wine - use existing form
+          const wine = result.data[0];
+          setExtractedData({
+            name: wine.name,
+            producer: wine.producer,
+            vintage: wine.vintage,
+            region: wine.region,
+            grape: wine.grape,
+            appellation: wine.appellation,
+            vineyard: wine.vineyard,
+            cru: wine.cru,
+            color: wine.color,
+            size: wine.size,
+          });
+          toast.success("Wine information extracted successfully");
+        } else {
+          // Multiple wines - use table view
+          setExtractedWines(result.data);
+          setStep("multi");
+          toast.success(`${result.data.length} wines detected in image`);
+          return;
+        }
+      } else {
+        setExtractedData({});
       }
     } catch (error) {
       console.error("Error processing image:", error);
@@ -134,6 +159,15 @@ export default function AddWinePage() {
             <p className="text-muted-foreground">Analyzing wine label...</p>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (step === "multi") {
+    return (
+      <div className="container py-8 max-w-6xl">
+        <h1 className="text-3xl font-bold mb-8">Add Multiple Wines</h1>
+        <MultiWineTable wines={extractedWines} imageUrl={imageUrl} />
       </div>
     );
   }
