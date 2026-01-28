@@ -16,7 +16,7 @@ export default async function MainLayout({
   return (
     <div className="min-h-screen bg-background">
       <Header userEmail={user?.email} pendingFriendRequests={pendingCount} />
-      <main className="px-4 sm:px-6 lg:px-8">{children}</main>
+      <main>{children}</main>
     </div>
   );
 }
