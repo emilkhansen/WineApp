@@ -53,7 +53,7 @@ export function AddFriendForm() {
         <DialogHeader>
           <DialogTitle>Add a Friend</DialogTitle>
           <DialogDescription>
-            Enter your friend's email address to send them a friend request.
+            Enter your friend&apos;s email address to send them a friend request.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

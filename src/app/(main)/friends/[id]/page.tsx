@@ -37,7 +37,7 @@ export default async function FriendProfilePage({
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold flex-1">{displayName}'s Profile</h1>
+        <h1 className="text-3xl font-bold flex-1">{displayName}&apos;s Profile</h1>
       </div>
 
       {/* Profile Header */}
