@@ -45,7 +45,7 @@ export function Header({ userEmail, pendingFriendRequests = 0 }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+      <div className="flex h-14 items-center px-4 sm:px-6 lg:px-8">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Wine className="h-6 w-6" />
@@ -132,7 +132,7 @@ export function Header({ userEmail, pendingFriendRequests = 0 }: HeaderProps) {
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t">
-          <nav className="flex flex-col space-y-1 p-4">
+          <nav className="flex flex-col space-y-1 px-4 sm:px-6 lg:px-8 py-4">
             {navigation.map((item) => (
               <Link
                 key={item.href}
