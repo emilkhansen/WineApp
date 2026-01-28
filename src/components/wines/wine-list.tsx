@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Wine as WineIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WineCard } from "@/components/wines/wine-card";
+import { WineTable } from "@/components/wines/wine-table";
 import { WineFiltersComponent, type WineFilters } from "@/components/wines/wine-filters";
 import type { Wine } from "@/lib/types";
 
@@ -98,11 +98,7 @@ export function WineList({ wines }: WineListProps) {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredWines.map((wine) => (
-            <WineCard key={wine.id} wine={wine} />
-          ))}
-        </div>
+        <WineTable wines={filteredWines} showVisibilityToggle={true} />
       )}
     </div>
   );

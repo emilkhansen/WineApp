@@ -172,6 +172,30 @@ export async function updateWineStock(id: string, stock: number) {
   return { success: true };
 }
 
+export async function toggleWinePublic(id: string, isPublic: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("wines")
+    .update({ is_public: isPublic })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error toggling wine visibility:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/wines");
+  revalidatePath(`/wines/${id}`);
+  return { success: true };
+}
+
 export async function uploadWineImage(file: File): Promise<{ url?: string; error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

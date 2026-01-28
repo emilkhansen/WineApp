@@ -13,6 +13,7 @@ export interface Wine {
   size: string | null;
   stock: number;
   image_url: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
