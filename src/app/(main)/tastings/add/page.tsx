@@ -114,14 +114,29 @@ export default function AddTastingPage() {
           return;
         }
 
+        // Load wines for the dropdown if not already loaded
+        if (wines.length === 0) {
+          const supabase = createClient();
+          const { data } = await supabase
+            .from("wines")
+            .select("*")
+            .order("name");
+          if (data) {
+            setWines(data);
+          }
+        }
+
         // Match each extracted wine to user's cellar
         const scannedWithMatches: ScannedWineForTasting[] = await Promise.all(
-          result.data.map(async (extracted: ExtractedWineWithId) => {
-            const match = await findMatchingWine(extracted);
+          result.data.map(async (extractedWithId: ExtractedWineWithId) => {
+            const match = await findMatchingWine(extractedWithId);
+            // Extract only ExtractedWineData properties (exclude tempId and position)
+            const { tempId, position, ...extracted } = extractedWithId;
             return {
-              tempId: extracted.tempId,
+              tempId,
               extracted,
               match,
+              selectedWineId: match ? match.wine.id : "new",
               rating: 0,
               notes: "",
             };
@@ -267,6 +282,7 @@ export default function AddTastingPage() {
       {step === "review" && (
         <MultiTastingReview
           scannedWines={scannedWines}
+          wines={wines}
           imageUrl={imageUrl}
           onCancel={handleCancelReview}
         />
