@@ -19,9 +19,10 @@ import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   userEmail?: string;
+  pendingFriendRequests?: number;
 }
 
-export function Header({ userEmail }: HeaderProps) {
+export function Header({ userEmail, pendingFriendRequests = 0 }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -37,7 +38,7 @@ export function Header({ userEmail }: HeaderProps) {
     { name: "Dashboard", href: "/" },
     { name: "My Wines", href: "/wines" },
     { name: "Tastings", href: "/tastings" },
-    { name: "Friends", href: "/friends" },
+    { name: pendingFriendRequests > 0 ? `Friends (${pendingFriendRequests})` : "Friends", href: "/friends" },
   ];
 
   const userInitial = userEmail ? userEmail[0].toUpperCase() : "U";
