@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,24 +15,69 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { WINE_REGIONS, getSubregionsForRegion } from "@/data/regions";
-import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
-import { WINE_COLORS } from "@/data/colors";
-import { WINE_CRUS } from "@/data/crus";
-import type { Wine, WineFormData } from "@/lib/types";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import type {
+  Wine,
+  WineFormData,
+  Color,
+  GrapeVarietyRef,
+  Region,
+  Subregion,
+  CruClassification,
+  AppellationRef,
+  Producer,
+  Vineyard,
+} from "@/lib/types";
 import { createWine, updateWine } from "@/actions/wines";
 import { toast } from "sonner";
+
+export interface WineFormReferenceData {
+  colors: Color[];
+  grapes: GrapeVarietyRef[];
+  regions: Region[];
+  subregions: Subregion[];
+  crus: CruClassification[];
+  appellations: AppellationRef[];
+  producers: Producer[];
+  vineyards: Vineyard[];
+}
 
 interface WineFormProps {
   wine?: Wine;
   initialData?: Partial<WineFormData>;
   imageUrl?: string;
   showExtractionStatus?: boolean;
+  referenceData: WineFormReferenceData;
 }
 
-export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: WineFormProps) {
+// Provide default empty arrays for reference data
+const defaultReferenceData: WineFormReferenceData = {
+  colors: [],
+  grapes: [],
+  regions: [],
+  subregions: [],
+  crus: [],
+  appellations: [],
+  producers: [],
+  vineyards: [],
+};
+
+export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, referenceData = defaultReferenceData }: WineFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+
+  // Ensure all reference data arrays exist
+  const safeReferenceData = {
+    colors: referenceData?.colors ?? [],
+    grapes: referenceData?.grapes ?? [],
+    regions: referenceData?.regions ?? [],
+    subregions: referenceData?.subregions ?? [],
+    crus: referenceData?.crus ?? [],
+    appellations: referenceData?.appellations ?? [],
+    producers: referenceData?.producers ?? [],
+    vineyards: referenceData?.vineyards ?? [],
+  };
+
   const [formData, setFormData] = useState<WineFormData>({
     name: wine?.name || initialData?.name || "",
     producer: wine?.producer || initialData?.producer || "",
@@ -48,7 +93,86 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: 
     stock: wine?.stock || initialData?.stock || 1,
   });
 
-  const availableSubregions = getSubregionsForRegion(formData.region);
+  // Convert reference data to combobox options
+  const colorOptions: ComboboxOption[] = useMemo(
+    () => safeReferenceData.colors.map((c) => ({ value: c.name, label: c.name })),
+    [safeReferenceData.colors]
+  );
+
+  const grapeOptions: ComboboxOption[] = useMemo(
+    () =>
+      safeReferenceData.grapes.map((g) => ({
+        value: g.name,
+        label: g.name,
+        description: g.color ? `${g.color}` : undefined,
+      })),
+    [safeReferenceData.grapes]
+  );
+
+  const regionOptions: ComboboxOption[] = useMemo(
+    () =>
+      safeReferenceData.regions.map((r) => ({
+        value: r.name,
+        label: r.name,
+        description: r.country || undefined,
+      })),
+    [safeReferenceData.regions]
+  );
+
+  const subregionOptions: ComboboxOption[] = useMemo(() => {
+    // Filter subregions by selected region
+    const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
+    if (!selectedRegion) return [];
+    return safeReferenceData.subregions
+      .filter((s) => s.region_id === selectedRegion.id)
+      .map((s) => ({ value: s.name, label: s.name }));
+  }, [safeReferenceData.regions, safeReferenceData.subregions, formData.region]);
+
+  const cruOptions: ComboboxOption[] = useMemo(() => {
+    // Optionally filter by region if set, otherwise show all
+    const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
+    return safeReferenceData.crus
+      .filter((c) => !c.region_id || (selectedRegion && c.region_id === selectedRegion.id))
+      .map((c) => ({
+        value: c.name,
+        label: c.name,
+        description: c.region?.name,
+      }));
+  }, [safeReferenceData.regions, safeReferenceData.crus, formData.region]);
+
+  const appellationOptions: ComboboxOption[] = useMemo(() => {
+    // Filter by region if set
+    const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
+    return safeReferenceData.appellations
+      .filter((a) => !a.region_id || (selectedRegion && a.region_id === selectedRegion.id))
+      .map((a) => ({
+        value: a.name,
+        label: a.name,
+        description: a.region?.name,
+      }));
+  }, [safeReferenceData.regions, safeReferenceData.appellations, formData.region]);
+
+  const producerOptions: ComboboxOption[] = useMemo(
+    () =>
+      safeReferenceData.producers.map((p) => ({
+        value: p.name,
+        label: p.name,
+        description: p.region?.name,
+      })),
+    [safeReferenceData.producers]
+  );
+
+  const vineyardOptions: ComboboxOption[] = useMemo(() => {
+    // Filter by region if set
+    const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
+    return safeReferenceData.vineyards
+      .filter((v) => !v.region_id || (selectedRegion && v.region_id === selectedRegion.id))
+      .map((v) => ({
+        value: v.name,
+        label: v.name,
+        description: v.region?.name,
+      }));
+  }, [safeReferenceData.regions, safeReferenceData.vineyards, formData.region]);
 
   // Helper to check if a field was extracted from the label
   const isExtracted = (field: keyof WineFormData) => {
@@ -152,11 +276,14 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: 
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="producer" field="producer">Producer</FieldLabel>
-              <Input
-                id="producer"
+              <Combobox
+                options={producerOptions}
                 value={formData.producer}
-                onChange={(e) => handleChange("producer", e.target.value)}
-                placeholder="e.g., Chateau Margaux"
+                onValueChange={(value) => handleChange("producer", value)}
+                placeholder="Select or type producer"
+                searchPlaceholder="Search producers..."
+                emptyText="No producers found"
+                allowCustomValue
               />
             </div>
           </div>
@@ -176,39 +303,26 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: 
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="color" field="color">Color</FieldLabel>
-              <Select
+              <Combobox
+                options={colorOptions}
                 value={formData.color}
                 onValueChange={(value) => handleChange("color", value)}
-              >
-                <SelectTrigger id="color">
-                  <SelectValue placeholder="Select color" />
-                </SelectTrigger>
-                <SelectContent>
-                  {WINE_COLORS.map((color) => (
-                    <SelectItem key={color} value={color}>
-                      {color}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select color"
+                searchPlaceholder="Search colors..."
+                emptyText="No colors found"
+              />
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="grape" field="grape">Grape</FieldLabel>
-              <Select
+              <Combobox
+                options={grapeOptions}
                 value={formData.grape}
                 onValueChange={(value) => handleChange("grape", value)}
-              >
-                <SelectTrigger id="grape">
-                  <SelectValue placeholder="Select grape" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALL_GRAPE_VARIETIES.map((grape) => (
-                    <SelectItem key={grape} value={grape}>
-                      {grape}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select grape"
+                searchPlaceholder="Search grapes..."
+                emptyText="No grapes found"
+                allowCustomValue
+              />
             </div>
           </div>
         </CardContent>
@@ -223,40 +337,28 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="region" field="region">Region</FieldLabel>
-              <Select
+              <Combobox
+                options={regionOptions}
                 value={formData.region}
                 onValueChange={(value) => handleChange("region", value)}
-              >
-                <SelectTrigger id="region">
-                  <SelectValue placeholder="Select region" />
-                </SelectTrigger>
-                <SelectContent>
-                  {WINE_REGIONS.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select region"
+                searchPlaceholder="Search regions..."
+                emptyText="No regions found"
+                allowCustomValue
+              />
             </div>
-            {availableSubregions.length > 0 && (
+            {subregionOptions.length > 0 && (
               <div className="space-y-2">
                 <FieldLabel htmlFor="subregion" field="subregion">Subregion</FieldLabel>
-                <Select
+                <Combobox
+                  options={subregionOptions}
                   value={formData.subregion}
                   onValueChange={(value) => handleChange("subregion", value)}
-                >
-                  <SelectTrigger id="subregion">
-                    <SelectValue placeholder="Select subregion" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSubregions.map((subregion) => (
-                      <SelectItem key={subregion} value={subregion}>
-                        {subregion}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select subregion"
+                  searchPlaceholder="Search subregions..."
+                  emptyText="No subregions found"
+                  allowCustomValue
+                />
               </div>
             )}
           </div>
@@ -264,40 +366,40 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="appellation" field="appellation">Appellation</FieldLabel>
-              <Input
-                id="appellation"
+              <Combobox
+                options={appellationOptions}
                 value={formData.appellation}
-                onChange={(e) => handleChange("appellation", e.target.value)}
-                placeholder="e.g., AOC Margaux"
+                onValueChange={(value) => handleChange("appellation", value)}
+                placeholder="Select or type appellation"
+                searchPlaceholder="Search appellations..."
+                emptyText="No appellations found"
+                allowCustomValue
               />
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="cru" field="cru">Cru Classification</FieldLabel>
-              <Select
+              <Combobox
+                options={cruOptions}
                 value={formData.cru}
                 onValueChange={(value) => handleChange("cru", value)}
-              >
-                <SelectTrigger id="cru">
-                  <SelectValue placeholder="Select cru" />
-                </SelectTrigger>
-                <SelectContent>
-                  {WINE_CRUS.map((cru) => (
-                    <SelectItem key={cru} value={cru}>
-                      {cru}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select cru"
+                searchPlaceholder="Search crus..."
+                emptyText="No crus found"
+                allowCustomValue
+              />
             </div>
           </div>
 
           <div className="space-y-2">
             <FieldLabel htmlFor="vineyard" field="vineyard">Vineyard / Lieu-dit</FieldLabel>
-            <Input
-              id="vineyard"
+            <Combobox
+              options={vineyardOptions}
               value={formData.vineyard}
-              onChange={(e) => handleChange("vineyard", e.target.value)}
-              placeholder="e.g., Les Clos, Clos de Vougeot"
+              onValueChange={(value) => handleChange("vineyard", value)}
+              placeholder="Select or type vineyard"
+              searchPlaceholder="Search vineyards..."
+              emptyText="No vineyards found"
+              allowCustomValue
             />
           </div>
         </CardContent>

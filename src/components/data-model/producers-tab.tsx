@@ -1,0 +1,157 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import type { Producer, Region } from "@/lib/types";
+import { createProducer, updateProducer, deleteProducer } from "@/actions/admin";
+import { ReferenceTable, type Column } from "./shared/reference-table";
+import { ReferenceDialog, type FieldConfig } from "./shared/reference-dialog";
+import { DeleteDialog } from "./shared/delete-dialog";
+
+interface ProducersTabProps {
+  initialData: Producer[];
+  regions: Region[];
+}
+
+export function ProducersTab({ initialData, regions }: ProducersTabProps) {
+  const [data, setData] = useState<Producer[]>(initialData);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Producer | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Producer | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const regionMap = useMemo(() => {
+    return new Map(regions.map((r) => [r.id, r]));
+  }, [regions]);
+
+  const columns: Column<Producer>[] = [
+    { key: "name", label: "Name" },
+    {
+      key: "region.name",
+      label: "Region",
+      render: (_, item) => (item.region_id ? regionMap.get(item.region_id)?.name : "-") || "-",
+    },
+  ];
+
+  const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
+
+  const fields: FieldConfig[] = [
+    { name: "name", label: "Name", type: "text", required: true, placeholder: "Enter producer name" },
+    {
+      name: "region_id",
+      label: "Region",
+      type: "select",
+      placeholder: "Select region (optional)",
+      options: regionOptions,
+    },
+  ];
+
+  const handleAdd = () => {
+    setEditingItem(null);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (item: Producer) => {
+    setEditingItem(item);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (item: Producer) => {
+    setDeletingItem(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSubmit = async (values: Record<string, string | number | null>) => {
+    setIsLoading(true);
+    try {
+      if (editingItem) {
+        const result = await updateProducer(
+          editingItem.id,
+          values.name as string,
+          values.region_id as string | null
+        );
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+        setData((prev) =>
+          prev.map((item) =>
+            item.id === editingItem.id
+              ? {
+                  ...item,
+                  name: values.name as string,
+                  region_id: values.region_id as string | null,
+                  region: values.region_id ? regionMap.get(values.region_id as string) : undefined,
+                }
+              : item
+          )
+        );
+        toast.success("Producer updated successfully");
+      } else {
+        const result = await createProducer(values.name as string, values.region_id as string | null);
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+        if (result.data) {
+          setData((prev) => [...prev, result.data!].sort((a, b) => a.name.localeCompare(b.name)));
+          toast.success("Producer created successfully");
+        }
+      }
+      setDialogOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingItem) return;
+    setIsLoading(true);
+    try {
+      const result = await deleteProducer(deletingItem.id);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      setData((prev) => prev.filter((item) => item.id !== deletingItem.id));
+      toast.success("Producer deleted successfully");
+    } finally {
+      setIsLoading(false);
+      setDeletingItem(null);
+    }
+  };
+
+  return (
+    <>
+      <ReferenceTable
+        data={data}
+        columns={columns}
+        onAdd={handleAdd}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        addLabel="Add Producer"
+        emptyMessage="No producers found"
+      />
+      <ReferenceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editingItem ? "Edit Producer" : "Add Producer"}
+        fields={fields}
+        initialValues={
+          editingItem ? { name: editingItem.name, region_id: editingItem.region_id } : undefined
+        }
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+      />
+      <DeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Producer"
+        description={`Are you sure you want to delete "${deletingItem?.name}"? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        isLoading={isLoading}
+      />
+    </>
+  );
+}

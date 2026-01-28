@@ -1,3 +1,70 @@
+// Reference Data Types
+export interface Color {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at?: string;
+}
+
+export interface GrapeVarietyRef {
+  id: string;
+  name: string;
+  color: string | null;
+  created_at?: string;
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  country: string | null;
+  created_at?: string;
+}
+
+export interface Subregion {
+  id: string;
+  name: string;
+  region_id: string;
+  region?: Region;
+  created_at?: string;
+}
+
+export interface CruClassification {
+  id: string;
+  name: string;
+  region_id: string | null;
+  region?: Region;
+  created_at?: string;
+}
+
+export interface AppellationRef {
+  id: string;
+  name: string;
+  region_id: string | null;
+  subregion_id: string | null;
+  region?: Region;
+  subregion?: Subregion;
+  created_at?: string;
+}
+
+export interface Producer {
+  id: string;
+  name: string;
+  region_id: string | null;
+  region?: Region;
+  created_at?: string;
+}
+
+export interface Vineyard {
+  id: string;
+  name: string;
+  region_id: string | null;
+  appellation_id: string | null;
+  region?: Region;
+  appellation?: AppellationRef;
+  created_at?: string;
+}
+
+// Wine Types
 export interface Wine {
   id: string;
   user_id: string;
@@ -15,6 +82,7 @@ export interface Wine {
   stock: number;
   image_url: string | null;
   is_public: boolean;
+  is_mine: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +124,7 @@ export interface WineFormData {
   color?: string;
   size?: string;
   stock?: number;
+  is_mine?: boolean;
 }
 
 export interface TastingFormData {
@@ -91,6 +160,7 @@ export interface Profile {
   id: string;
   username: string | null;
   email: string;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -121,6 +191,7 @@ export interface ScannedWineForTasting {
     wine: Wine;
     confidence: "high" | "medium";
   } | null;
+  selectedWineId: string | "new" | "not_mine";  // tracks user selection: wine ID, "new" for creating, or "not_mine" for wines user doesn't own
   rating: number;
   notes: string;
 }

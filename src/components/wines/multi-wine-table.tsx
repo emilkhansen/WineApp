@@ -22,19 +22,31 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WINE_REGIONS } from "@/data/regions";
-import { WINE_COLORS } from "@/data/colors";
-import { WINE_CRUS } from "@/data/crus";
 import { createWines } from "@/actions/wines";
-import type { ExtractedWineWithId, WineFormData } from "@/lib/types";
+import type {
+  ExtractedWineWithId,
+  WineFormData,
+  Color,
+  Region,
+  CruClassification,
+} from "@/lib/types";
 import { toast } from "sonner";
 
 interface MultiWineTableProps {
   wines: ExtractedWineWithId[];
   imageUrl?: string;
+  colors: Color[];
+  regions: Region[];
+  crus: CruClassification[];
 }
 
-export function MultiWineTable({ wines: initialWines, imageUrl }: MultiWineTableProps) {
+export function MultiWineTable({
+  wines: initialWines,
+  imageUrl,
+  colors,
+  regions,
+  crus,
+}: MultiWineTableProps) {
   const router = useRouter();
   const [wines, setWines] = useState<ExtractedWineWithId[]>(initialWines);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -231,9 +243,9 @@ export function MultiWineTable({ wines: initialWines, imageUrl }: MultiWineTable
                         <SelectValue placeholder="Region" />
                       </SelectTrigger>
                       <SelectContent>
-                        {WINE_REGIONS.map((region) => (
-                          <SelectItem key={region} value={region}>
-                            {region}
+                        {regions.map((region) => (
+                          <SelectItem key={region.id} value={region.name}>
+                            {region.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -250,9 +262,9 @@ export function MultiWineTable({ wines: initialWines, imageUrl }: MultiWineTable
                         <SelectValue placeholder="Cru" />
                       </SelectTrigger>
                       <SelectContent>
-                        {WINE_CRUS.map((cru) => (
-                          <SelectItem key={cru} value={cru}>
-                            {cru}
+                        {crus.map((cru) => (
+                          <SelectItem key={cru.id} value={cru.name}>
+                            {cru.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -269,9 +281,9 @@ export function MultiWineTable({ wines: initialWines, imageUrl }: MultiWineTable
                         <SelectValue placeholder="Color" />
                       </SelectTrigger>
                       <SelectContent>
-                        {WINE_COLORS.map((color) => (
-                          <SelectItem key={color} value={color}>
-                            {color}
+                        {colors.map((color) => (
+                          <SelectItem key={color.id} value={color.name}>
+                            {color.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
