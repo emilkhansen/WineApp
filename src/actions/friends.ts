@@ -262,11 +262,12 @@ export async function getFriendWines(friendId: string): Promise<Wine[]> {
     return [];
   }
 
-  // Get friend's wines
+  // Get friend's public wines only
   const { data, error } = await supabase
     .from("wines")
     .select("*")
     .eq("user_id", friendId)
+    .eq("is_public", true)
     .order("created_at", { ascending: false });
 
   if (error) {
