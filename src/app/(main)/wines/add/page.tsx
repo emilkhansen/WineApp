@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WineForm } from "@/components/wines/wine-form";
 import { MultiWineTable } from "@/components/wines/multi-wine-table";
+import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
@@ -172,12 +173,61 @@ export default function AddWinePage() {
     );
   }
 
+  // Scan step with split-panel layout for review
+  if (step === "scan") {
+    return (
+      <div className="container py-8 max-w-5xl">
+        {/* Header with back button */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-2 -ml-2"
+            onClick={() => setStep("choose")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold">Review Wine Details</h1>
+          <p className="text-muted-foreground">
+            Verify the extracted information and fill in any missing details
+          </p>
+        </div>
+
+        {/* Split layout */}
+        <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+          {/* Left: Image (sticky on desktop, collapsible on mobile) */}
+          <div className="lg:sticky lg:top-8 lg:self-start">
+            <ImagePreviewCard imageUrl={imageUrl} />
+          </div>
+
+          {/* Right: Form */}
+          <WineForm
+            initialData={extractedData || undefined}
+            imageUrl={imageUrl}
+            showExtractionStatus={true}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Manual entry
   return (
     <div className="container py-8 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-8">
-        {step === "scan" ? "Review Wine Details" : "Add Wine"}
-      </h1>
-      <WineForm initialData={extractedData || undefined} imageUrl={imageUrl} />
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-2 -ml-2"
+          onClick={() => setStep("choose")}
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+        <h1 className="text-2xl font-bold">Add Wine</h1>
+      </div>
+      <WineForm />
     </div>
   );
 }

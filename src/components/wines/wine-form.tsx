@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CheckCircle2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { WINE_REGIONS, getSubregionsForRegion } from "@/data/regions";
 import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
 import { WINE_COLORS } from "@/data/colors";
@@ -25,9 +27,10 @@ interface WineFormProps {
   wine?: Wine;
   initialData?: Partial<WineFormData>;
   imageUrl?: string;
+  showExtractionStatus?: boolean;
 }
 
-export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
+export function WineForm({ wine, initialData, imageUrl, showExtractionStatus }: WineFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<WineFormData>({
@@ -46,6 +49,20 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
   });
 
   const availableSubregions = getSubregionsForRegion(formData.region);
+
+  // Helper to check if a field was extracted from the label
+  const isExtracted = (field: keyof WineFormData) => {
+    if (!showExtractionStatus || !initialData) return false;
+    const value = initialData[field];
+    return value !== undefined && value !== "" && value !== null;
+  };
+
+  // Count extracted fields
+  const extractedCount = showExtractionStatus && initialData
+    ? Object.entries(initialData).filter(([, value]) =>
+        value !== undefined && value !== "" && value !== null
+      ).length
+    : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,36 +103,67 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
     });
   };
 
+  // Helper to render a field label with optional extraction badge
+  const FieldLabel = ({ htmlFor, children, field }: { htmlFor: string; children: React.ReactNode; field?: keyof WineFormData }) => (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={htmlFor}>{children}</Label>
+      {field && isExtracted(field) && (
+        <Badge variant="secondary" className="text-xs h-5 px-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          <Check className="h-3 w-3 mr-0.5" />
+          Extracted
+        </Badge>
+      )}
+    </div>
+  );
+
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Extraction Summary */}
+      {showExtractionStatus && (
+        <Card className="bg-muted/30 border-green-200 dark:border-green-900/50">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500" />
+              <span className="font-medium">{extractedCount} field{extractedCount !== 1 ? 's' : ''} extracted</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Review and fill in any missing details below
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Wine Information */}
       <Card>
-        <CardContent className="pt-6 space-y-6">
-          {/* Basic Info */}
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">Wine Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Wine Name *</Label>
+              <FieldLabel htmlFor="name" field="name">Wine Name *</FieldLabel>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="e.g., Château Margaux"
+                placeholder="e.g., Chateau Margaux"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="producer">Producer</Label>
+              <FieldLabel htmlFor="producer" field="producer">Producer</FieldLabel>
               <Input
                 id="producer"
                 value={formData.producer}
                 onChange={(e) => handleChange("producer", e.target.value)}
-                placeholder="e.g., Château Margaux"
+                placeholder="e.g., Chateau Margaux"
               />
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="vintage">Vintage</Label>
+              <FieldLabel htmlFor="vintage" field="vintage">Vintage</FieldLabel>
               <Input
                 id="vintage"
                 type="number"
@@ -127,7 +175,7 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
+              <FieldLabel htmlFor="color" field="color">Color</FieldLabel>
               <Select
                 value={formData.color}
                 onValueChange={(value) => handleChange("color", value)}
@@ -144,29 +192,8 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="region">Region</Label>
-              <Select
-                value={formData.region}
-                onValueChange={(value) => handleChange("region", value)}
-              >
-                <SelectTrigger id="region">
-                  <SelectValue placeholder="Select region" />
-                </SelectTrigger>
-                <SelectContent>
-                  {WINE_REGIONS.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="grape">Grape</Label>
+              <FieldLabel htmlFor="grape" field="grape">Grape</FieldLabel>
               <Select
                 value={formData.grape}
                 onValueChange={(value) => handleChange("grape", value)}
@@ -184,11 +211,37 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
               </Select>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {availableSubregions.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
+      {/* Origin & Classification */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">Origin & Classification</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <FieldLabel htmlFor="region" field="region">Region</FieldLabel>
+              <Select
+                value={formData.region}
+                onValueChange={(value) => handleChange("region", value)}
+              >
+                <SelectTrigger id="region">
+                  <SelectValue placeholder="Select region" />
+                </SelectTrigger>
+                <SelectContent>
+                  {WINE_REGIONS.map((region) => (
+                    <SelectItem key={region} value={region}>
+                      {region}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {availableSubregions.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="subregion">Subregion</Label>
+                <FieldLabel htmlFor="subregion" field="subregion">Subregion</FieldLabel>
                 <Select
                   value={formData.subregion}
                   onValueChange={(value) => handleChange("subregion", value)}
@@ -205,13 +258,12 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Additional Details */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="appellation">Appellation</Label>
+              <FieldLabel htmlFor="appellation" field="appellation">Appellation</FieldLabel>
               <Input
                 id="appellation"
                 value={formData.appellation}
@@ -220,7 +272,7 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cru">Cru Classification</Label>
+              <FieldLabel htmlFor="cru" field="cru">Cru Classification</FieldLabel>
               <Select
                 value={formData.cru}
                 onValueChange={(value) => handleChange("cru", value)}
@@ -239,18 +291,27 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <FieldLabel htmlFor="vineyard" field="vineyard">Vineyard / Lieu-dit</FieldLabel>
+            <Input
+              id="vineyard"
+              value={formData.vineyard}
+              onChange={(e) => handleChange("vineyard", e.target.value)}
+              placeholder="e.g., Les Clos, Clos de Vougeot"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Inventory */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">Inventory</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="vineyard">Vineyard / Lieu-dit</Label>
-              <Input
-                id="vineyard"
-                value={formData.vineyard}
-                onChange={(e) => handleChange("vineyard", e.target.value)}
-                placeholder="e.g., Les Clos, Clos de Vougeot"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="size">Bottle Size</Label>
+              <FieldLabel htmlFor="size" field="size">Bottle Size</FieldLabel>
               <Select
                 value={formData.size}
                 onValueChange={(value) => handleChange("size", value)}
@@ -266,35 +327,34 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="stock">Stock</Label>
-            <Input
-              id="stock"
-              type="number"
-              min="0"
-              value={formData.stock || 1}
-              onChange={(e) => handleChange("stock", parseInt(e.target.value) || 0)}
-              className="w-32"
-            />
-          </div>
-
-          <div className="flex gap-4 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : wine ? "Update Wine" : "Add Wine"}
-            </Button>
+            <div className="space-y-2">
+              <FieldLabel htmlFor="stock" field="stock">Stock</FieldLabel>
+              <Input
+                id="stock"
+                type="number"
+                min="0"
+                value={formData.stock || 1}
+                onChange={(e) => handleChange("stock", parseInt(e.target.value) || 0)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Actions */}
+      <div className="flex gap-4 justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : wine ? "Update Wine" : "Add Wine"}
+        </Button>
+      </div>
     </form>
   );
 }
