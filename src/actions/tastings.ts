@@ -364,6 +364,7 @@ export async function createTastingsFromScan(
             size: tasting.newWine.size || null,
             image_url: imageUrl || null,
             stock: 0, // New wine from tasting starts with 0 stock
+            is_mine: tasting.newWine.is_mine !== false, // Default to true if not specified
           })
           .select()
           .single();

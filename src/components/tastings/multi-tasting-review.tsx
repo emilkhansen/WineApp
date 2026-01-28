@@ -12,21 +12,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { StarRating } from "@/components/tastings/star-rating";
 import { createTastingsFromScan } from "@/actions/tastings";
-import type { ScannedWineForTasting, WineFormData } from "@/lib/types";
+import type { ScannedWineForTasting, WineFormData, Wine } from "@/lib/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface MultiTastingReviewProps {
   scannedWines: ScannedWineForTasting[];
+  wines: Wine[];
   imageUrl?: string;
   onCancel: () => void;
 }
 
 export function MultiTastingReview({
   scannedWines: initialWines,
+  wines: cellarWines,
   imageUrl,
   onCancel,
 }: MultiTastingReviewProps) {
@@ -51,6 +61,12 @@ export function MultiTastingReview({
     );
   };
 
+  const updateSelectedWine = (tempId: string, selectedWineId: string | "new" | "not_mine") => {
+    setWines((prev) =>
+      prev.map((w) => (w.tempId === tempId ? { ...w, selectedWineId } : w))
+    );
+  };
+
   const removeWine = (tempId: string) => {
     setWines((prev) => prev.filter((w) => w.tempId !== tempId));
   };
@@ -72,13 +88,15 @@ export function MultiTastingReview({
 
     try {
       const tastingInputs = wines.map((wine) => {
-        if (wine.match) {
+        if (wine.selectedWineId !== "new" && wine.selectedWineId !== "not_mine") {
+          // Use existing wine from cellar
           return {
-            wine_id: wine.match.wine.id,
+            wine_id: wine.selectedWineId,
             rating: wine.rating,
             notes: wine.notes || undefined,
           };
         } else {
+          // Create new wine from extracted data
           const newWine: WineFormData = {
             name: wine.extracted.name || "Unknown Wine",
             producer: wine.extracted.producer,
@@ -91,6 +109,7 @@ export function MultiTastingReview({
             cru: wine.extracted.cru,
             color: wine.extracted.color,
             size: wine.extracted.size,
+            is_mine: wine.selectedWineId !== "not_mine",
           };
           return {
             newWine,
@@ -210,74 +229,118 @@ export function MultiTastingReview({
               </CardContent>
             </Card>
           ) : (
-            wines.map((wine) => (
-              <Card key={wine.tempId}>
-                <CardContent className="pt-4">
-                  {/* Header with name and remove button */}
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">
-                        {getWineDisplayName(wine)}
-                      </h4>
-                      {/* Match status */}
-                      {wine.match ? (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Check className="h-4 w-4 text-green-600" />
-                          <span className="text-sm text-muted-foreground">
-                            Matched: &quot;{wine.match.wine.name}
-                            {wine.match.wine.vintage && ` (${wine.match.wine.vintage})`}
-                            &quot;
-                          </span>
-                          <Badge
-                            variant={wine.match.confidence === "high" ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {wine.match.wine.stock} in stock
-                          </Badge>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 mt-1">
-                          <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                          <span className="text-sm text-muted-foreground">
-                            New wine will be created (stock: 0)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0"
-                      onClick={() => removeWine(wine.tempId)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+            wines.map((wine) => {
+              const selectedCellarWine = wine.selectedWineId !== "new" && wine.selectedWineId !== "not_mine"
+                ? cellarWines.find(w => w.id === wine.selectedWineId)
+                : null;
 
-                  {/* Rating and Notes */}
-                  <div className="grid gap-4 md:grid-cols-[auto_1fr] items-start mt-4 pt-4 border-t">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Rating *</Label>
-                      <StarRating
-                        rating={wine.rating}
-                        onRatingChange={(r) => updateWineRating(wine.tempId, r)}
-                        size="md"
-                      />
+              return (
+                <Card key={wine.tempId}>
+                  <CardContent className="pt-4">
+                    {/* Header with scanned name and remove button */}
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground">Scanned:</p>
+                        <h4 className="font-medium truncate">
+                          {getWineDisplayName(wine)}
+                        </h4>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => removeWine(wine.tempId)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Notes</Label>
-                      <Textarea
-                        value={wine.notes}
-                        onChange={(e) => updateWineNotes(wine.tempId, e.target.value)}
-                        placeholder="Your impressions..."
-                        rows={2}
-                        className="resize-none"
-                      />
+
+                    {/* Wine selection dropdown */}
+                    <div className="space-y-2 mb-4 pt-3 border-t">
+                      <Label className="text-sm">Wine</Label>
+                      <Select
+                        value={wine.selectedWineId}
+                        onValueChange={(value) => updateSelectedWine(wine.tempId, value as string | "new" | "not_mine")}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a wine...">
+                            {wine.selectedWineId === "new" ? (
+                              <span className="flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                                Create new wine
+                              </span>
+                            ) : wine.selectedWineId === "not_mine" ? (
+                              <span className="flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-blue-600" />
+                                Not my wine
+                              </span>
+                            ) : selectedCellarWine ? (
+                              <span className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-green-600" />
+                                {selectedCellarWine.name}
+                                {selectedCellarWine.vintage && ` (${selectedCellarWine.vintage})`}
+                              </span>
+                            ) : (
+                              "Select a wine..."
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">
+                            <span className="flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                              Create new wine
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="not_mine">
+                            <span className="flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4 text-blue-600" />
+                              Not my wine
+                            </span>
+                          </SelectItem>
+                          <SelectSeparator />
+                          {cellarWines.map((cellarWine) => (
+                            <SelectItem key={cellarWine.id} value={cellarWine.id}>
+                              <span className="flex items-center justify-between gap-4">
+                                <span>
+                                  {cellarWine.name}
+                                  {cellarWine.vintage && ` (${cellarWine.vintage})`}
+                                </span>
+                                <Badge variant="secondary" className="text-xs ml-2">
+                                  {cellarWine.stock} in stock
+                                </Badge>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+
+                    {/* Rating and Notes */}
+                    <div className="grid gap-4 md:grid-cols-[auto_1fr] items-start pt-4 border-t">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Rating *</Label>
+                        <StarRating
+                          rating={wine.rating}
+                          onRatingChange={(r) => updateWineRating(wine.tempId, r)}
+                          size="md"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Notes</Label>
+                        <Textarea
+                          value={wine.notes}
+                          onChange={(e) => updateWineNotes(wine.tempId, e.target.value)}
+                          placeholder="Your impressions..."
+                          rows={2}
+                          className="resize-none"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
 
