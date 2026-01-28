@@ -16,12 +16,13 @@ interface WineDetailPageProps {
 
 export default async function WineDetailPage({ params }: WineDetailPageProps) {
   const { id } = await params;
-  const wine = await getWine(id);
+  const result = await getWine(id);
 
-  if (!wine) {
+  if (!result) {
     notFound();
   }
 
+  const { wine, isOwner } = result;
   const tastings = await getTastingsForWine(id);
 
   return (
@@ -33,12 +34,14 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
           </Button>
         </Link>
         <h1 className="text-3xl font-bold flex-1">{wine.name}</h1>
-        <Link href={`/wines/${wine.id}/edit`}>
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        </Link>
+        {isOwner && (
+          <Link href={`/wines/${wine.id}/edit`}>
+            <Button variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -96,6 +99,12 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
                     <dd className="font-medium">{wine.vineyard}</dd>
                   </div>
                 )}
+                {wine.cru && (
+                  <div>
+                    <dt className="text-sm text-muted-foreground">Cru</dt>
+                    <dd className="font-medium">{wine.cru}</dd>
+                  </div>
+                )}
                 {wine.size && (
                   <div>
                     <dt className="text-sm text-muted-foreground">Bottle Size</dt>
@@ -106,50 +115,54 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
             </CardContent>
           </Card>
 
-          {/* Tastings */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Tastings ({tastings.length})</CardTitle>
-              <Link href={`/tastings/add?wine=${wine.id}`}>
-                <Button size="sm">Add Tasting</Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {tastings.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
-                  No tastings recorded yet
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {tastings.map((tasting) => (
-                    <TastingListItem key={tasting.id} tasting={tasting} showWine={false} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Tastings - only show for owner */}
+          {isOwner && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Tastings ({tastings.length})</CardTitle>
+                <Link href={`/tastings/add?wine=${wine.id}`}>
+                  <Button size="sm">Add Tasting</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {tastings.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    No tastings recorded yet
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {tastings.map((tasting) => (
+                      <TastingListItem key={tasting.id} tasting={tasting} showWine={false} />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Stock</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <StockAdjuster wineId={wine.id} currentStock={wine.stock} />
-            </CardContent>
-          </Card>
+        {/* Sidebar - only show for owner */}
+        {isOwner && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Stock</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StockAdjuster wineId={wine.id} currentStock={wine.stock} />
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DeleteWineButton wineId={wine.id} wineName={wine.name} />
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-destructive">Danger Zone</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DeleteWineButton wineId={wine.id} wineName={wine.name} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

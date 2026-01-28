@@ -11,11 +11,13 @@ interface EditWinePageProps {
 
 export default async function EditWinePage({ params }: EditWinePageProps) {
   const { id } = await params;
-  const wine = await getWine(id);
+  const result = await getWine(id);
 
-  if (!wine) {
+  if (!result || !result.isOwner) {
     notFound();
   }
+
+  const { wine } = result;
 
   return (
     <div className="container py-8 max-w-2xl">

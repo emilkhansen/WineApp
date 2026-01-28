@@ -15,11 +15,13 @@ interface TastingDetailPageProps {
 
 export default async function TastingDetailPage({ params }: TastingDetailPageProps) {
   const { id } = await params;
-  const tasting = await getTasting(id);
+  const result = await getTasting(id);
 
-  if (!tasting) {
+  if (!result) {
     notFound();
   }
+
+  const { tasting, isOwner } = result;
 
   return (
     <div className="container py-8 max-w-2xl">
@@ -30,12 +32,14 @@ export default async function TastingDetailPage({ params }: TastingDetailPagePro
           </Button>
         </Link>
         <h1 className="text-3xl font-bold flex-1">Tasting</h1>
-        <Link href={`/tastings/${tasting.id}/edit`}>
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        </Link>
+        {isOwner && (
+          <Link href={`/tastings/${tasting.id}/edit`}>
+            <Button variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -114,15 +118,17 @@ export default async function TastingDetailPage({ params }: TastingDetailPagePro
           </CardContent>
         </Card>
 
-        {/* Danger Zone */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DeleteTastingButton tastingId={tasting.id} />
-          </CardContent>
-        </Card>
+        {/* Danger Zone - only show for owner */}
+        {isOwner && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DeleteTastingButton tastingId={tasting.id} />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

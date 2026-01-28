@@ -27,7 +27,7 @@ export async function getWines(): Promise<Wine[]> {
   return data || [];
 }
 
-export async function getWine(id: string): Promise<Wine | null> {
+export async function getWine(id: string): Promise<{ wine: Wine; isOwner: boolean } | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -35,19 +35,31 @@ export async function getWine(id: string): Promise<Wine | null> {
     return null;
   }
 
-  const { data, error } = await supabase
+  // First try to get user's own wine
+  const { data: ownWine } = await supabase
     .from("wines")
     .select("*")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
-  if (error) {
+  if (ownWine) {
+    return { wine: ownWine, isOwner: true };
+  }
+
+  // If not own wine, check if it's a friend's wine (RLS will handle access)
+  const { data: friendWine, error } = await supabase
+    .from("wines")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !friendWine) {
     console.error("Error fetching wine:", error);
     return null;
   }
 
-  return data;
+  return { wine: friendWine, isOwner: false };
 }
 
 export async function createWine(formData: WineFormData, imageUrl?: string) {

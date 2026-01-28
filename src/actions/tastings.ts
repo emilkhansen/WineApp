@@ -139,7 +139,7 @@ export async function getTastingsForWine(wineId: string): Promise<Tasting[]> {
   return data || [];
 }
 
-export async function getTasting(id: string): Promise<TastingWithWine | null> {
+export async function getTasting(id: string): Promise<{ tasting: TastingWithWine; isOwner: boolean } | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -147,7 +147,8 @@ export async function getTasting(id: string): Promise<TastingWithWine | null> {
     return null;
   }
 
-  const { data, error } = await supabase
+  // First try to get user's own tasting
+  const { data: ownTasting } = await supabase
     .from("tastings")
     .select(`
       *,
@@ -157,12 +158,26 @@ export async function getTasting(id: string): Promise<TastingWithWine | null> {
     .eq("user_id", user.id)
     .single();
 
-  if (error) {
+  if (ownTasting) {
+    return { tasting: ownTasting, isOwner: true };
+  }
+
+  // If not own tasting, check if it's a friend's tasting (RLS will handle access)
+  const { data: friendTasting, error } = await supabase
+    .from("tastings")
+    .select(`
+      *,
+      wine:wines(*)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error || !friendTasting) {
     console.error("Error fetching tasting:", error);
     return null;
   }
 
-  return data;
+  return { tasting: friendTasting, isOwner: false };
 }
 
 export async function createTasting(formData: TastingFormData) {
