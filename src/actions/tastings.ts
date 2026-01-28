@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Tasting, TastingFormData, TastingWithWine, TastingWithWineAndAuthor } from "@/lib/types";
+import type {
+  Tasting,
+  TastingFormData,
+  TastingWithWine,
+  TastingWithWineAndAuthor,
+  CreateTastingFromScanInput,
+  TastingScanSharedData,
+} from "@/lib/types";
 import { getFriends } from "./friends";
 
 export async function getTastings(): Promise<TastingWithWine[]> {
@@ -299,4 +306,108 @@ export async function deleteTasting(id: string) {
 
   revalidatePath("/tastings");
   redirect("/tastings");
+}
+
+export async function createTastingsFromScan(
+  tastings: CreateTastingFromScanInput[],
+  sharedData: TastingScanSharedData,
+  imageUrl?: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  try {
+    const createdWineIds: string[] = [];
+
+    for (const tasting of tastings) {
+      let wineId: string;
+
+      if (tasting.wine_id) {
+        // Use existing wine and decrement stock
+        wineId = tasting.wine_id;
+
+        // Get current stock
+        const { data: wine } = await supabase
+          .from("wines")
+          .select("stock")
+          .eq("id", wineId)
+          .eq("user_id", user.id)
+          .single();
+
+        if (wine) {
+          await supabase
+            .from("wines")
+            .update({ stock: Math.max(0, wine.stock - 1) })
+            .eq("id", wineId)
+            .eq("user_id", user.id);
+        }
+      } else if (tasting.newWine) {
+        // Create new wine with stock=0
+        const { data: newWine, error: wineError } = await supabase
+          .from("wines")
+          .insert({
+            user_id: user.id,
+            name: tasting.newWine.name,
+            producer: tasting.newWine.producer || null,
+            vintage: tasting.newWine.vintage || null,
+            region: tasting.newWine.region || null,
+            subregion: tasting.newWine.subregion || null,
+            grape: tasting.newWine.grape || null,
+            appellation: tasting.newWine.appellation || null,
+            vineyard: tasting.newWine.vineyard || null,
+            cru: tasting.newWine.cru || null,
+            color: tasting.newWine.color || null,
+            size: tasting.newWine.size || null,
+            image_url: imageUrl || null,
+            stock: 0, // New wine from tasting starts with 0 stock
+          })
+          .select()
+          .single();
+
+        if (wineError || !newWine) {
+          console.error("Error creating wine:", wineError);
+          return { success: false, error: wineError?.message || "Failed to create wine" };
+        }
+
+        wineId = newWine.id;
+        createdWineIds.push(wineId);
+      } else {
+        return { success: false, error: "Each tasting must have either a wine_id or newWine data" };
+      }
+
+      // Create the tasting
+      const { error: tastingError } = await supabase
+        .from("tastings")
+        .insert({
+          user_id: user.id,
+          wine_id: wineId,
+          rating: tasting.rating,
+          notes: tasting.notes || null,
+          tasting_date: sharedData.tasting_date,
+          location: sharedData.location || null,
+          occasion: sharedData.occasion || null,
+        });
+
+      if (tastingError) {
+        console.error("Error creating tasting:", tastingError);
+        return { success: false, error: tastingError.message };
+      }
+    }
+
+    // Revalidate paths
+    revalidatePath("/tastings");
+    revalidatePath("/wines");
+    for (const wineId of createdWineIds) {
+      revalidatePath(`/wines/${wineId}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in createTastingsFromScan:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
 }

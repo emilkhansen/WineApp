@@ -112,3 +112,28 @@ export interface FriendWithProfile extends Friendship {
 export interface PendingRequest extends Friendship {
   sender: Profile;
 }
+
+// Tasting Scan Feature Types
+export interface ScannedWineForTasting {
+  tempId: string;
+  extracted: ExtractedWineData;
+  match: {
+    wine: Wine;
+    confidence: "high" | "medium";
+  } | null;
+  rating: number;
+  notes: string;
+}
+
+export interface TastingScanSharedData {
+  tasting_date: string;
+  location?: string;
+  occasion?: string;
+}
+
+export interface CreateTastingFromScanInput {
+  wine_id?: string;
+  newWine?: WineFormData;
+  rating: number;
+  notes?: string;
+}
