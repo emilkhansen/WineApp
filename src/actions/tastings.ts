@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Tasting, TastingFormData, TastingWithWine } from "@/lib/types";
+import type { Tasting, TastingFormData, TastingWithWine, TastingWithWineAndAuthor } from "@/lib/types";
+import { getFriends } from "./friends";
 
 export async function getTastings(): Promise<TastingWithWine[]> {
   const supabase = await createClient();
@@ -28,6 +29,92 @@ export async function getTastings(): Promise<TastingWithWine[]> {
   }
 
   return data || [];
+}
+
+export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  // Get current user's profile
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  // Get user's own tastings
+  const { data: myTastings, error: myError } = await supabase
+    .from("tastings")
+    .select(`
+      *,
+      wine:wines(*)
+    `)
+    .eq("user_id", user.id)
+    .order("tasting_date", { ascending: false });
+
+  if (myError) {
+    console.error("Error fetching my tastings:", myError);
+    return [];
+  }
+
+  // Get friends
+  const friends = await getFriends();
+  const friendIds = friends.map(f => f.profile.id);
+
+  // Get friends' tastings (only public wines)
+  let friendTastings: TastingWithWine[] = [];
+  if (friendIds.length > 0) {
+    const { data, error } = await supabase
+      .from("tastings")
+      .select(`
+        *,
+        wine:wines!inner(*)
+      `)
+      .in("user_id", friendIds)
+      .eq("wines.is_public", true)
+      .order("tasting_date", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching friend tastings:", error);
+    } else {
+      friendTastings = (data || []) as TastingWithWine[];
+    }
+  }
+
+  // Create a map of friend profiles for quick lookup
+  const friendProfileMap = new Map(friends.map(f => [f.profile.id, f.profile]));
+
+  // Combine and add author info
+  const myTastingsWithAuthor: TastingWithWineAndAuthor[] = (myTastings || []).map(t => ({
+    ...t,
+    author: {
+      id: user.id,
+      username: myProfile?.username || null,
+      isMe: true,
+    },
+  }));
+
+  const friendTastingsWithAuthor: TastingWithWineAndAuthor[] = friendTastings.map(t => {
+    const friendProfile = friendProfileMap.get(t.user_id);
+    return {
+      ...t,
+      author: {
+        id: t.user_id,
+        username: friendProfile?.username || null,
+        isMe: false,
+      },
+    };
+  });
+
+  // Combine and sort by date
+  const allTastings = [...myTastingsWithAuthor, ...friendTastingsWithAuthor];
+  allTastings.sort((a, b) => new Date(b.tasting_date).getTime() - new Date(a.tasting_date).getTime());
+
+  return allTastings;
 }
 
 export async function getTastingsForWine(wineId: string): Promise<Tasting[]> {

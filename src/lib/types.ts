@@ -33,6 +33,14 @@ export interface TastingWithWine extends Tasting {
   wine: Wine;
 }
 
+export interface TastingWithWineAndAuthor extends TastingWithWine {
+  author: {
+    id: string;
+    username: string | null;
+    isMe: boolean;
+  };
+}
+
 export interface WineFormData {
   name: string;
   producer?: string;

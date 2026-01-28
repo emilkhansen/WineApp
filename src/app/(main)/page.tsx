@@ -5,12 +5,12 @@ import { StatsCards } from "@/components/dashboard/stats-cards";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { TastingCalendar } from "@/components/dashboard/tasting-calendar";
 import { getDashboardStats, getTastingDatesForMonth } from "@/actions/stats";
-import { getTastings } from "@/actions/tastings";
+import { getTastingsWithFriends } from "@/actions/tastings";
 
 export default async function DashboardPage() {
   const [stats, tastings, tastingDates] = await Promise.all([
     getDashboardStats(),
-    getTastings(),
+    getTastingsWithFriends(),
     getTastingDatesForMonth(new Date().getFullYear(), new Date().getMonth()),
   ]);
 

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Plus, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getTastings } from "@/actions/tastings";
+import { getTastingsWithFriends } from "@/actions/tastings";
 import { TastingListItem } from "@/components/tastings/tasting-list-item";
 
 export default async function TastingsPage() {
-  const tastings = await getTastings();
+  const tastings = await getTastingsWithFriends();
 
   return (
     <div className="container py-8">
