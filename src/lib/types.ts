@@ -5,6 +5,7 @@ export interface Wine {
   producer: string | null;
   vintage: number | null;
   region: string | null;
+  subregion: string | null;
   grape: string | null;
   appellation: string | null;
   vineyard: string | null;
@@ -47,6 +48,7 @@ export interface WineFormData {
   producer?: string;
   vintage?: number;
   region?: string;
+  subregion?: string;
   grape?: string;
   appellation?: string;
   vineyard?: string;
@@ -70,6 +72,7 @@ export interface ExtractedWineData {
   producer?: string;
   vintage?: number;
   region?: string;
+  subregion?: string;
   grape?: string;
   appellation?: string;
   vineyard?: string;

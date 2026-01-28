@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { WINE_REGIONS } from "@/data/regions";
+import { WINE_REGIONS, getSubregionsForRegion } from "@/data/regions";
 import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
 import { WINE_COLORS } from "@/data/colors";
 import { WINE_CRUS } from "@/data/crus";
@@ -35,6 +35,7 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
     producer: wine?.producer || initialData?.producer || "",
     vintage: wine?.vintage || initialData?.vintage || undefined,
     region: wine?.region || initialData?.region || "",
+    subregion: wine?.subregion || initialData?.subregion || "",
     grape: wine?.grape || initialData?.grape || "",
     appellation: wine?.appellation || initialData?.appellation || "",
     vineyard: wine?.vineyard || initialData?.vineyard || "",
@@ -43,6 +44,8 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
     size: wine?.size || initialData?.size || "",
     stock: wine?.stock || initialData?.stock || 1,
   });
+
+  const availableSubregions = getSubregionsForRegion(formData.region);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +77,13 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
   };
 
   const handleChange = (field: keyof WineFormData, value: string | number | undefined) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      // Clear subregion when region changes
+      if (field === "region") {
+        return { ...prev, [field]: value, subregion: "" };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   return (
@@ -175,6 +184,29 @@ export function WineForm({ wine, initialData, imageUrl }: WineFormProps) {
               </Select>
             </div>
           </div>
+
+          {availableSubregions.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="subregion">Subregion</Label>
+                <Select
+                  value={formData.subregion}
+                  onValueChange={(value) => handleChange("subregion", value)}
+                >
+                  <SelectTrigger id="subregion">
+                    <SelectValue placeholder="Select subregion" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSubregions.map((subregion) => (
+                      <SelectItem key={subregion} value={subregion}>
+                        {subregion}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           {/* Additional Details */}
           <div className="grid gap-4 md:grid-cols-2">

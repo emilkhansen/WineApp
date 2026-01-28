@@ -71,7 +71,11 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
                   <div className="flex flex-wrap gap-2">
                     {wine.vintage && <Badge variant="secondary">{wine.vintage}</Badge>}
                     {wine.color && <Badge variant="secondary">{wine.color}</Badge>}
-                    {wine.region && <Badge variant="outline">{wine.region}</Badge>}
+                    {wine.region && (
+                      <Badge variant="outline">
+                        {wine.subregion ? `${wine.region} - ${wine.subregion}` : wine.region}
+                      </Badge>
+                    )}
                     {wine.grape && (
                       <Badge variant="outline">{wine.grape}</Badge>
                     )}
