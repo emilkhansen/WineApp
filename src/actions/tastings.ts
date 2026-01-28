@@ -65,23 +65,22 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
   const friends = await getFriends();
   const friendIds = friends.map(f => f.profile.id);
 
-  // Get friends' tastings (only public wines)
+  // Get friends' tastings
   let friendTastings: TastingWithWine[] = [];
   if (friendIds.length > 0) {
     const { data, error } = await supabase
       .from("tastings")
       .select(`
         *,
-        wine:wines!inner(*)
+        wine:wines(*)
       `)
       .in("user_id", friendIds)
-      .eq("wines.is_public", true)
       .order("tasting_date", { ascending: false });
 
     if (error) {
       console.error("Error fetching friend tastings:", error);
     } else {
-      friendTastings = (data || []) as TastingWithWine[];
+      friendTastings = (data || []).filter(t => t.wine !== null) as TastingWithWine[];
     }
   }
 

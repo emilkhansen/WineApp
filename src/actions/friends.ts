@@ -262,12 +262,11 @@ export async function getFriendWines(friendId: string): Promise<Wine[]> {
     return [];
   }
 
-  // Get friend's public wines
+  // Get friend's wines
   const { data, error } = await supabase
     .from("wines")
     .select("*")
     .eq("user_id", friendId)
-    .eq("is_public", true)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -298,15 +297,14 @@ export async function getFriendTastings(friendId: string): Promise<(Tasting & { 
     return [];
   }
 
-  // Get friend's tastings for public wines
+  // Get friend's tastings
   const { data, error } = await supabase
     .from("tastings")
     .select(`
       *,
-      wine:wines!inner(*)
+      wine:wines(*)
     `)
     .eq("user_id", friendId)
-    .eq("wines.is_public", true)
     .order("tasting_date", { ascending: false });
 
   if (error) {
@@ -314,7 +312,7 @@ export async function getFriendTastings(friendId: string): Promise<(Tasting & { 
     return [];
   }
 
-  return (data || []) as (Tasting & { wine: Wine })[];
+  return (data || []).filter(t => t.wine !== null) as (Tasting & { wine: Wine })[];
 }
 
 export async function getFriendProfile(friendId: string) {
