@@ -223,15 +223,17 @@ export default function AddTastingPage() {
       "container py-8",
       step === "review" ? "max-w-5xl" : "max-w-4xl"
     )}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/tastings">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold">Add Tasting</h1>
-      </div>
+      {/* Header - hidden in review step which has its own header */}
+      {step !== "review" && (
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/tastings">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Add Tasting</h1>
+        </div>
+      )}
 
       {/* Hidden file input */}
       <input

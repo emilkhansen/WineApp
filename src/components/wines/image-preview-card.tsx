@@ -56,7 +56,7 @@ export function ImagePreviewCard({ imageUrl, className }: ImagePreviewCardProps)
                   src={imageUrl}
                   alt="Scanned wine label"
                   fill
-                  className="object-cover"
+                  className="object-contain bg-muted"
                   sizes="(max-width: 1024px) 100vw, 300px"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
