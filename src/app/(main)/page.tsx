@@ -67,8 +67,12 @@ export default async function DashboardPage() {
 
       {/* Activity Feed and Calendar */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <ActivityFeed tastings={recentTastings} />
-        <TastingCalendar initialTastingDates={tastingDates} />
+        <div className="min-w-0">
+          <ActivityFeed tastings={recentTastings} />
+        </div>
+        <div className="min-w-0">
+          <TastingCalendar initialTastingDates={tastingDates} />
+        </div>
       </div>
     </div>
   );

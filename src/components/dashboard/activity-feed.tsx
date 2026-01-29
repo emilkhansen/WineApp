@@ -17,10 +17,10 @@ function hasAuthor(tasting: TastingWithWine | TastingWithWineAndAuthor): tasting
 export function ActivityFeed({ tastings }: ActivityFeedProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg">Recent Tastings</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 gap-2">
+        <CardTitle className="text-lg shrink-0">Recent Tastings</CardTitle>
         <Link href="/tastings">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="shrink-0">
             View all
             <ArrowRight className="ml-1 h-4 w-4" />
           </Button>

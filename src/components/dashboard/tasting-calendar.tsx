@@ -79,22 +79,24 @@ export function TastingCalendar({ initialTastingDates }: TastingCalendarProps) {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Calendar</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-2 gap-2">
+          <CardTitle className="text-lg shrink-0">Calendar</CardTitle>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
+              className="shrink-0"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium w-32 text-center">
-              {format(currentMonth, "MMMM yyyy")}
+            <span className="text-sm font-medium min-w-[100px] text-center">
+              {format(currentMonth, "MMM yyyy")}
             </span>
             <Button
               variant="ghost"
               size="icon"
+              className="shrink-0"
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
             >
               <ChevronRight className="h-4 w-4" />
