@@ -81,25 +81,31 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
       }
 
       // Upload converted image using FormData (required for Server Actions)
+      addLog("Uploading image to storage...");
       const formData = new FormData();
       formData.append("file", fileToUpload);
       const uploadResult = await uploadWineImage(formData);
       if (uploadResult.error) {
+        addLog(`UPLOAD ERROR: ${uploadResult.error}`);
         toast.error(`Upload failed: ${uploadResult.error}`);
         setStep("choose");
         setScanning(false);
         return;
       }
+      addLog(`Upload OK: ${uploadResult.url}`);
       setImageUrl(uploadResult.url);
 
       // Extract wine data using Claude (supports multiple wines)
+      addLog("Extracting wine data via Claude API...");
       const result = await extractWinesFromImage(base64, mimeType);
 
       if (result.error) {
+        addLog(`EXTRACTION ERROR: ${result.error}`);
         toast.error(result.error);
         // Still proceed to form with image uploaded
         setExtractedData({});
       } else if (result.data && result.data.length > 0) {
+        addLog(`Extraction OK: ${result.data.length} wine(s) found`);
         if (result.data.length === 1) {
           // Single wine - match to references and use existing form
           const wine = result.data[0];
@@ -131,6 +137,8 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         setExtractedData({});
       }
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      addLog(`OUTER ERROR: ${errMsg}`);
       console.error("Error processing image:", error);
       toast.error("Failed to process image. You can enter details manually.");
       setExtractedData({});
