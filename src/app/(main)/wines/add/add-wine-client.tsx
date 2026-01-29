@@ -127,8 +127,7 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
                 <input
                   id="wine-image"
                   type="file"
-                  accept="image/*"
-                  capture="environment"
+                  accept="image/*,.heic,.heif"
                   className="hidden"
                   onChange={handleFileUpload}
                 />
