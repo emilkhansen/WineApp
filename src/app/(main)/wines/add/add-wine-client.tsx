@@ -9,7 +9,7 @@ import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
-import { convertImageToJpeg, isHeicFile } from "@/lib/image-utils";
+import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
 import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
@@ -40,8 +40,8 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
       let mimeType: string;
 
       try {
-        // Show converting state for HEIC files (they take longer)
-        if (isHeicFile(file)) {
+        // Show converting state for unknown formats (includes HEIC which takes longer)
+        if (!isKnownImageFormat(file)) {
           setConverting(true);
         }
 
@@ -180,7 +180,7 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
           <CardContent className="py-16 flex flex-col items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {converting ? "Converting HEIC image..." : "Analyzing wine label..."}
+              {converting ? "Converting image..." : "Analyzing wine label..."}
             </p>
           </CardContent>
         </Card>

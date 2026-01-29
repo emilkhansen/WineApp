@@ -18,7 +18,7 @@ import { MultiTastingReview } from "@/components/tastings/multi-tasting-review";
 import { createTasting } from "@/actions/tastings";
 import { findMatchingWine, uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
-import { convertImageToJpeg, isHeicFile } from "@/lib/image-utils";
+import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Wine as WineType, ScannedWineForTasting, ExtractedWineWithId } from "@/lib/types";
 import { getWineDisplayName } from "@/lib/wine-utils";
@@ -93,8 +93,8 @@ export default function AddTastingPage() {
       let mimeType: string;
 
       try {
-        // Show converting state for HEIC files (they take longer)
-        if (isHeicFile(file)) {
+        // Show converting state for unknown formats (includes HEIC which takes longer)
+        if (!isKnownImageFormat(file)) {
           setConverting(true);
         }
 
@@ -282,11 +282,11 @@ export default function AddTastingPage() {
           <CardContent className="py-16 text-center">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
             <h3 className="text-lg font-medium mb-2">
-              {converting ? "Converting HEIC Image" : "Analyzing Wine Label"}
+              {converting ? "Converting Image" : "Analyzing Wine Label"}
             </h3>
             <p className="text-muted-foreground">
               {converting
-                ? "Converting image format..."
+                ? "Converting image to a compatible format..."
                 : "Extracting wine information from your photo..."}
             </p>
           </CardContent>

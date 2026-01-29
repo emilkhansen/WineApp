@@ -12,22 +12,22 @@ export interface ConvertedImage {
 }
 
 /**
- * Detect if a file is HEIC/HEIF format
- * Safari often reports empty MIME type for HEIC files, so we check extension as fallback
+ * Check if a file type is a known format that can be read directly
  */
-export function isHeicFile(file: File): boolean {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
+export function isKnownImageFormat(file: File): boolean {
   return (
-    type === "image/heic" ||
-    type === "image/heif" ||
-    (type === "" && (name.endsWith(".heic") || name.endsWith(".heif")))
+    file.type === "image/jpeg" ||
+    file.type === "image/png" ||
+    file.type === "image/webp"
   );
 }
 
 /**
  * Convert any image file to JPEG base64
  * Handles HEIC via heic2any library, other formats via direct read or canvas
+ *
+ * Strategy: For unknown formats (including HEIC from Safari with empty type),
+ * try heic2any first, then fall back to canvas conversion if it fails.
  */
 export async function convertImageToJpeg(file: File): Promise<ConvertedImage> {
   // Check general file size limit
@@ -35,59 +35,49 @@ export async function convertImageToJpeg(file: File): Promise<ConvertedImage> {
     throw new Error("File is too large. Maximum size is 20MB.");
   }
 
-  // Handle HEIC files
-  if (isHeicFile(file)) {
-    // Additional size limit for HEIC due to memory concerns during conversion
-    if (file.size > MAX_HEIC_SIZE) {
-      throw new Error(
-        "HEIC file is too large. Please use a photo under 15MB, or convert to JPEG first."
-      );
-    }
-    return convertHeicToJpeg(file);
-  }
-
   // For JPEG/PNG/WebP, read directly without conversion
-  if (
-    file.type === "image/jpeg" ||
-    file.type === "image/png" ||
-    file.type === "image/webp"
-  ) {
+  if (isKnownImageFormat(file)) {
     return readFileDirectly(file);
   }
 
-  // For other formats, try canvas conversion
-  return convertViaCanvas(file);
+  // Unknown format (includes HEIC from Safari with empty type)
+  // Try heic2any first, fall back to canvas if it fails
+  try {
+    return await convertHeicToJpeg(file);
+  } catch {
+    // Not a HEIC file or heic2any failed - try canvas
+    return convertViaCanvas(file);
+  }
 }
 
 /**
  * Convert HEIC file to JPEG using heic2any library
+ * Throws on failure - caller should handle fallback to canvas
  */
 async function convertHeicToJpeg(file: File): Promise<ConvertedImage> {
-  try {
-    // Dynamic import to avoid bundle bloat (2.7MB loaded only when needed)
-    const heic2any = (await import("heic2any")).default;
-
-    const convertedBlob = await heic2any({
-      blob: file,
-      toType: "image/jpeg",
-      quality: 0.9,
-    });
-
-    // heic2any can return single blob or array
-    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-
-    const base64 = await blobToBase64(blob);
-    return {
-      base64,
-      mimeType: "image/jpeg",
-      blob,
-    };
-  } catch (error) {
-    console.error("HEIC conversion failed:", error);
-    throw new Error(
-      "Could not convert HEIC image. Please try taking the photo with 'Most Compatible' camera format in Settings > Camera > Formats."
-    );
+  // Size check for HEIC (memory concerns during conversion)
+  if (file.size > MAX_HEIC_SIZE) {
+    throw new Error("HEIC file is too large. Please use a photo under 15MB, or convert to JPEG first.");
   }
+
+  // Dynamic import to avoid bundle bloat (2.7MB loaded only when needed)
+  const heic2any = (await import("heic2any")).default;
+
+  const convertedBlob = await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.9,
+  });
+
+  // heic2any can return single blob or array
+  const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+
+  const base64 = await blobToBase64(blob);
+  return {
+    base64,
+    mimeType: "image/jpeg",
+    blob,
+  };
 }
 
 /**
