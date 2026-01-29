@@ -8,7 +8,6 @@ import { WineForm, type WineFormReferenceData } from "@/components/wines/wine-fo
 import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
-import { extractWinesFromImage } from "@/lib/vision";
 import { convertImageToJpeg, isKnownImageFormat, setDebugLogger } from "@/lib/image-utils";
 import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
@@ -95,9 +94,14 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
       addLog(`Upload OK: ${uploadResult.url}`);
       setImageUrl(uploadResult.url);
 
-      // Extract wine data using Claude (supports multiple wines)
+      // Extract wine data using Claude API route (bypasses Server Component serialization limits)
       addLog("Extracting wine data via Claude API...");
-      const result = await extractWinesFromImage(base64, mimeType);
+      const extractResponse = await fetch("/api/extract-wines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64Image: base64, mimeType }),
+      });
+      const result = await extractResponse.json();
 
       if (result.error) {
         addLog(`EXTRACTION ERROR: ${result.error}`);
