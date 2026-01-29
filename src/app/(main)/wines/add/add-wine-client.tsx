@@ -42,11 +42,11 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
       }
       setImageUrl(uploadResult.url);
 
-      // Convert file to base64 for Claude API
-      const base64 = await fileToBase64(file);
+      // Convert image to JPEG base64 (handles HEIC and other formats)
+      const { base64, mimeType } = await convertImageToJpegBase64(file);
 
       // Extract wine data using Claude (supports multiple wines)
-      const result = await extractWinesFromImage(base64, file.type);
+      const result = await extractWinesFromImage(base64, mimeType);
 
       if (result.error) {
         toast.error(result.error);
@@ -92,17 +92,40 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  // Convert any image to JPEG base64 (handles HEIC, etc.)
+  const convertImageToJpegBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove the data URL prefix to get just the base64 string
-        const base64 = result.split(",")[1];
-        resolve(base64);
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        // Create canvas and draw image
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+
+        // Convert to JPEG base64
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        const base64 = dataUrl.split(",")[1];
+        resolve({ base64, mimeType: "image/jpeg" });
       };
-      reader.onerror = reject;
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Could not load image"));
+      };
+
+      img.src = url;
     });
   };
 
