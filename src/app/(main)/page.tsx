@@ -19,22 +19,40 @@ export default async function DashboardPage() {
 
   return (
     <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Your wine collection at a glance
-          </p>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Your wine collection at a glance
+            </p>
+          </div>
+          {/* Desktop: buttons next to title */}
+          <div className="hidden sm:flex gap-2">
+            <Link href="/wines/add">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Wine
+              </Button>
+            </Link>
+            <Link href="/tastings/add">
+              <Button variant="outline">
+                <Wine className="mr-2 h-4 w-4" />
+                Add Tasting
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Link href="/wines/add">
-            <Button>
+        {/* Mobile: buttons below header */}
+        <div className="flex gap-2 mt-4 sm:hidden">
+          <Link href="/wines/add" className="flex-1">
+            <Button className="w-full">
               <Plus className="mr-2 h-4 w-4" />
               Add Wine
             </Button>
           </Link>
-          <Link href="/tastings/add">
-            <Button variant="outline">
+          <Link href="/tastings/add" className="flex-1">
+            <Button variant="outline" className="w-full">
               <Wine className="mr-2 h-4 w-4" />
               Add Tasting
             </Button>

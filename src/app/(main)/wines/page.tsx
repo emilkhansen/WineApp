@@ -10,17 +10,30 @@ export default async function WinesPage() {
 
   return (
     <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">My Wines</h1>
-          <p className="text-muted-foreground">
-            {wines.length} {wines.length === 1 ? "wine" : "wines"} in your collection
-          </p>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">My Wines</h1>
+            <p className="text-muted-foreground">
+              {wines.length} {wines.length === 1 ? "wine" : "wines"} in your collection
+            </p>
+          </div>
+          {/* Desktop: buttons next to title */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ExportWineListButton wines={wines} />
+            <Link href="/wines/add">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Wine
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Mobile: buttons below header */}
+        <div className="flex gap-2 mt-4 sm:hidden">
           <ExportWineListButton wines={wines} />
-          <Link href="/wines/add">
-            <Button>
+          <Link href="/wines/add" className="flex-1">
+            <Button className="w-full">
               <Plus className="mr-2 h-4 w-4" />
               Add Wine
             </Button>

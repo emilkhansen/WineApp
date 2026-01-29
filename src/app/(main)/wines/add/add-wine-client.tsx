@@ -128,6 +128,7 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
                   id="wine-image"
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   className="hidden"
                   onChange={handleFileUpload}
                 />

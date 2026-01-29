@@ -64,7 +64,13 @@ export function WineTable({ wines, showVisibilityToggle = false, emptyMessage = 
         {wines.map((wine) => (
           <TableRow key={wine.id}>
             <TableCell className="font-medium">
-              <div className="max-w-[300px] truncate">{getWineDisplayName(wine)}</div>
+              <div>
+                <div className="md:max-w-[300px] md:truncate">{getWineDisplayName(wine)}</div>
+                {/* Show vintage and color on mobile since those columns are hidden */}
+                <div className="md:hidden text-sm text-muted-foreground mt-1">
+                  {[wine.vintage, wine.color, wine.region].filter(Boolean).join(" · ")}
+                </div>
+              </div>
             </TableCell>
             <TableCell className="hidden md:table-cell">
               {wine.vintage || "-"}
