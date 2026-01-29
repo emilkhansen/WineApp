@@ -152,12 +152,12 @@ export function MultiTastingReview({
   return (
     <div className="grid gap-6 lg:grid-cols-[300px_1fr] overflow-hidden">
       {/* Left column - Image preview (sticky on desktop) */}
-      <div className="lg:sticky lg:top-8 lg:self-start max-w-sm mx-auto lg:max-w-none lg:mx-0">
+      <div className="lg:sticky lg:top-8 lg:self-start min-w-0">
         <ImagePreviewCard imageUrl={imageUrl} />
       </div>
 
       {/* Right column - Review form */}
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-0">
         {/* Shared fields */}
         <Card>
           <CardHeader>
