@@ -18,6 +18,7 @@ import { MultiTastingReview } from "@/components/tastings/multi-tasting-review";
 import { createTasting } from "@/actions/tastings";
 import { findMatchingWine, uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
+import { convertImageToJpeg, isHeicFile } from "@/lib/image-utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Wine as WineType, ScannedWineForTasting, ExtractedWineWithId } from "@/lib/types";
 import { getWineDisplayName } from "@/lib/wine-utils";
@@ -43,6 +44,7 @@ export default function AddTastingPage() {
   // Scan state
   const [scannedWines, setScannedWines] = useState<ScannedWineForTasting[]>([]);
   const [imageUrl, setImageUrl] = useState<string>();
+  const [converting, setConverting] = useState(false);
 
   // Manual form state
   const [loading, setLoading] = useState(false);
@@ -85,9 +87,34 @@ export default function AddTastingPage() {
     setStep("scanning");
 
     try {
-      // Upload the image first using FormData (required for Server Actions)
+      // Convert image to JPEG first (handles HEIC and other formats)
+      let fileToUpload: File | Blob = file;
+      let base64: string;
+      let mimeType: string;
+
+      try {
+        // Show converting state for HEIC files (they take longer)
+        if (isHeicFile(file)) {
+          setConverting(true);
+        }
+
+        const converted = await convertImageToJpeg(file);
+        base64 = converted.base64;
+        mimeType = converted.mimeType;
+        fileToUpload = converted.blob;
+
+        setConverting(false);
+      } catch (conversionError) {
+        setConverting(false);
+        console.error("Image conversion failed:", conversionError);
+        toast.error(conversionError instanceof Error ? conversionError.message : "Failed to process image");
+        setStep("choose");
+        return;
+      }
+
+      // Upload the converted image using FormData (required for Server Actions)
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       const uploadResult = await uploadWineImage(formData);
       if (uploadResult.error || !uploadResult.url) {
         toast.error(uploadResult.error || "Failed to upload image");
@@ -96,60 +123,47 @@ export default function AddTastingPage() {
       }
       setImageUrl(uploadResult.url);
 
-      // Read file as base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const mimeType = file.type;
+      // Extract wines from image
+      const result = await extractWinesFromImage(base64, mimeType);
 
-        // Extract wines from image
-        const result = await extractWinesFromImage(base64, mimeType);
-
-        if (result.error || !result.data || result.data.length === 0) {
-          toast.error(result.error || "No wines detected in the image");
-          setStep("choose");
-          return;
-        }
-
-        // Load wines for the dropdown if not already loaded
-        if (wines.length === 0) {
-          const supabase = createClient();
-          const { data } = await supabase
-            .from("wines")
-            .select("*")
-            .order("producer");
-          if (data) {
-            setWines(data);
-          }
-        }
-
-        // Match each extracted wine to user's cellar
-        const scannedWithMatches: ScannedWineForTasting[] = await Promise.all(
-          result.data.map(async (extractedWithId: ExtractedWineWithId) => {
-            const match = await findMatchingWine(extractedWithId);
-            // Extract only ExtractedWineData properties (exclude tempId and position)
-            const { tempId, position, ...extracted } = extractedWithId;
-            return {
-              tempId,
-              extracted,
-              match,
-              selectedWineId: match ? match.wine.id : "new",
-              rating: 0,
-              notes: "",
-            };
-          })
-        );
-
-        setScannedWines(scannedWithMatches);
-        setStep("review");
-      };
-
-      reader.onerror = () => {
-        toast.error("Failed to read image file");
+      if (result.error || !result.data || result.data.length === 0) {
+        toast.error(result.error || "No wines detected in the image");
         setStep("choose");
-      };
+        return;
+      }
 
-      reader.readAsDataURL(file);
+      // Load wines for the dropdown if not already loaded
+      if (wines.length === 0) {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("wines")
+          .select("*")
+          .order("producer");
+        if (data) {
+          setWines(data);
+        }
+      }
+
+      // Match each extracted wine to user's cellar
+      const scannedWithMatches: ScannedWineForTasting[] = await Promise.all(
+        result.data.map(async (extractedWithId: ExtractedWineWithId) => {
+          const match = await findMatchingWine(extractedWithId);
+          // Extract only ExtractedWineData properties (exclude tempId and position)
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { tempId, position, ...extracted } = extractedWithId;
+          return {
+            tempId,
+            extracted,
+            match,
+            selectedWineId: match ? match.wine.id : "new",
+            rating: 0,
+            notes: "",
+          };
+        })
+      );
+
+      setScannedWines(scannedWithMatches);
+      setStep("review");
     } catch {
       toast.error("Failed to process image");
       setStep("choose");
@@ -216,7 +230,7 @@ export default function AddTastingPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -267,9 +281,13 @@ export default function AddTastingPage() {
         <Card>
           <CardContent className="py-16 text-center">
             <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-            <h3 className="text-lg font-medium mb-2">Analyzing Wine Label</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {converting ? "Converting HEIC Image" : "Analyzing Wine Label"}
+            </h3>
             <p className="text-muted-foreground">
-              Extracting wine information from your photo...
+              {converting
+                ? "Converting image format..."
+                : "Extracting wine information from your photo..."}
             </p>
           </CardContent>
         </Card>

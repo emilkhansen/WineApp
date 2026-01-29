@@ -9,6 +9,7 @@ import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
+import { convertImageToJpeg, isHeicFile } from "@/lib/image-utils";
 import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ interface AddWineClientProps {
 export function AddWineClient({ referenceData }: AddWineClientProps) {
   const [step, setStep] = useState<"choose" | "scan" | "manual" | "multi">("choose");
   const [scanning, setScanning] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedWineData | null>(null);
   const [extractedWines, setExtractedWines] = useState<ExtractedWineWithId[]>([]);
   const [imageUrl, setImageUrl] = useState<string | undefined>();
@@ -38,21 +40,19 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
       let mimeType: string;
 
       try {
-        const converted = await convertImageToJpegBase64(file);
+        // Show converting state for HEIC files (they take longer)
+        if (isHeicFile(file)) {
+          setConverting(true);
+        }
+
+        const converted = await convertImageToJpeg(file);
         base64 = converted.base64;
         mimeType = converted.mimeType;
+        fileToUpload = converted.blob;
 
-        // If conversion happened (not a passthrough), create a new Blob for upload
-        if (mimeType === "image/jpeg" && file.type !== "image/jpeg") {
-          const byteCharacters = atob(base64);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          fileToUpload = new Blob([byteArray], { type: "image/jpeg" });
-        }
+        setConverting(false);
       } catch (conversionError) {
+        setConverting(false);
         console.error("Image conversion failed:", conversionError);
         toast.error(conversionError instanceof Error ? conversionError.message : "Failed to process image");
         setStep("choose");
@@ -119,68 +119,6 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
     }
   };
 
-  // Convert any image to JPEG base64 with timeout and fallback (handles HEIC, etc.)
-  const convertImageToJpegBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
-    return new Promise((resolve, reject) => {
-      // For JPEG/PNG/WebP, read directly without conversion
-      if (file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp") {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.split(",")[1];
-          resolve({ base64, mimeType: file.type });
-        };
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(file);
-        return;
-      }
-
-      // For other formats (HEIC, etc.), try canvas conversion with timeout
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-
-      // Timeout after 10 seconds
-      const timeout = setTimeout(() => {
-        URL.revokeObjectURL(url);
-        reject(new Error("Image loading timed out. Try using JPEG or PNG format."));
-      }, 10000);
-
-      img.onload = () => {
-        clearTimeout(timeout);
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            URL.revokeObjectURL(url);
-            reject(new Error("Could not get canvas context"));
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0);
-          URL.revokeObjectURL(url);
-
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-          const base64 = dataUrl.split(",")[1];
-          resolve({ base64, mimeType: "image/jpeg" });
-        } catch (err) {
-          URL.revokeObjectURL(url);
-          reject(err);
-        }
-      };
-
-      img.onerror = () => {
-        clearTimeout(timeout);
-        URL.revokeObjectURL(url);
-        reject(new Error("Could not load image. Try using JPEG or PNG format."));
-      };
-
-      img.src = url;
-    });
-  };
-
   if (step === "choose") {
     return (
       <div className="container py-8 max-w-2xl">
@@ -241,7 +179,9 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         <Card>
           <CardContent className="py-16 flex flex-col items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Analyzing wine label...</p>
+            <p className="text-muted-foreground">
+              {converting ? "Converting HEIC image..." : "Analyzing wine label..."}
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -227,6 +227,8 @@ export async function uploadWineImage(formData: FormData): Promise<{ url?: strin
     "image/png": "png",
     "image/webp": "webp",
     "image/gif": "gif",
+    "image/heic": "heic",
+    "image/heif": "heif",
   };
   const fileExt = mimeToExt[file.type] || "jpg";
   const fileName = `${user.id}/${Date.now()}.${fileExt}`;
