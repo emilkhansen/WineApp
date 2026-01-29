@@ -18,7 +18,7 @@ export function ImagePreviewCard({ imageUrl, className }: ImagePreviewCardProps)
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card className={cn("overflow-hidden w-full", className)}>
       {/* Mobile collapsible header */}
       <CardHeader
         className="lg:hidden cursor-pointer py-3"
