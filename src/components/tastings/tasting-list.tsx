@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { TastingListItem } from "@/components/tastings/tasting-list-item";
 import { TastingFiltersComponent, type TastingFilters } from "@/components/tastings/tasting-filters";
 import type { TastingWithWineAndAuthor } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface TastingListProps {
   tastings: TastingWithWineAndAuthor[];
@@ -51,9 +52,9 @@ export function TastingList({ tastings }: TastingListProps) {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
+        const displayName = getWineDisplayName(tasting.wine).toLowerCase();
         const matchesSearch =
-          tasting.wine.name.toLowerCase().includes(searchLower) ||
-          tasting.wine.producer?.toLowerCase().includes(searchLower) ||
+          displayName.includes(searchLower) ||
           tasting.notes?.toLowerCase().includes(searchLower) ||
           tasting.location?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;

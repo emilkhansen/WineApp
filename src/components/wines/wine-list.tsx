@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { WineTable } from "@/components/wines/wine-table";
 import { WineFiltersComponent, type WineFilters } from "@/components/wines/wine-filters";
 import type { Wine } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface WineListProps {
   wines: Wine[];
@@ -26,12 +27,11 @@ export function WineList({ wines }: WineListProps) {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
+        const displayName = getWineDisplayName(wine).toLowerCase();
         const matchesSearch =
-          wine.name.toLowerCase().includes(searchLower) ||
-          wine.producer?.toLowerCase().includes(searchLower) ||
+          displayName.includes(searchLower) ||
           wine.region?.toLowerCase().includes(searchLower) ||
-          wine.grape?.toLowerCase().includes(searchLower) ||
-          wine.appellation?.toLowerCase().includes(searchLower);
+          wine.grape?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
 

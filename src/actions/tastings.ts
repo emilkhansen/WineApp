@@ -351,7 +351,6 @@ export async function createTastingsFromScan(
           .from("wines")
           .insert({
             user_id: user.id,
-            name: tasting.newWine.name,
             producer: tasting.newWine.producer || null,
             vintage: tasting.newWine.vintage || null,
             region: tasting.newWine.region || null,

@@ -74,7 +74,6 @@ export async function createWine(formData: WineFormData, imageUrl?: string) {
     .from("wines")
     .insert({
       user_id: user.id,
-      name: formData.name,
       producer: formData.producer || null,
       vintage: formData.vintage || null,
       region: formData.region || null,
@@ -111,7 +110,6 @@ export async function updateWine(id: string, formData: WineFormData) {
   const { data, error } = await supabase
     .from("wines")
     .update({
-      name: formData.name,
       producer: formData.producer || null,
       vintage: formData.vintage || null,
       region: formData.region || null,
@@ -250,7 +248,6 @@ export async function createWines(
 
   const wineRecords = wines.map((formData) => ({
     user_id: user.id,
-    name: formData.name,
     producer: formData.producer || null,
     vintage: formData.vintage || null,
     region: formData.region || null,
@@ -285,12 +282,10 @@ export async function findMatchingWine(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || !extracted.name) {
+  // Need at least producer or appellation to match
+  if (!user || (!extracted.producer && !extracted.appellation)) {
     return null;
   }
-
-  // Normalize the search name
-  const searchName = extracted.name.toLowerCase().trim();
 
   // Get all user's wines for matching
   const { data: wines, error } = await supabase
@@ -302,52 +297,71 @@ export async function findMatchingWine(
     return null;
   }
 
+  // Helper for fuzzy string matching
+  const fuzzyMatch = (a: string | null | undefined, b: string | null | undefined): { exact: boolean; partial: boolean } => {
+    if (!a || !b) return { exact: false, partial: false };
+    const aLower = a.toLowerCase().trim();
+    const bLower = b.toLowerCase().trim();
+    if (aLower === bLower) return { exact: true, partial: true };
+    if (aLower.includes(bLower) || bLower.includes(aLower)) return { exact: false, partial: true };
+    return { exact: false, partial: false };
+  };
+
   // Score each wine for match quality
   type ScoredWine = { wine: Wine; score: number };
   const scoredWines: ScoredWine[] = [];
 
   for (const wine of wines) {
     let score = 0;
-    const wineName = wine.name.toLowerCase().trim();
 
-    // Name matching (required)
-    if (wineName === searchName) {
-      score += 50; // Exact match
-    } else if (wineName.includes(searchName) || searchName.includes(wineName)) {
-      score += 30; // Partial match
-    } else {
-      // Try word-based matching
-      const searchWords = searchName.split(/\s+/).filter((w: string) => w.length > 2);
-      const wineWords = wineName.split(/\s+/).filter((w: string) => w.length > 2);
-      const matchingWords = searchWords.filter((sw: string) =>
-        wineWords.some((ww: string) => ww.includes(sw) || sw.includes(ww))
-      );
-      if (matchingWords.length >= 2 || (matchingWords.length === 1 && searchWords.length === 1)) {
-        score += 20;
-      } else {
-        continue; // No name match at all, skip this wine
-      }
-    }
-
-    // Vintage matching
+    // Vintage matching (exact only)
     if (extracted.vintage && wine.vintage) {
       if (extracted.vintage === wine.vintage) {
-        score += 25; // Exact vintage match
+        score += 30; // Exact vintage match is important
       }
     }
 
-    // Producer matching
+    // Producer matching (primary)
     if (extracted.producer && wine.producer) {
-      const extractedProducer = extracted.producer.toLowerCase().trim();
-      const wineProducer = wine.producer.toLowerCase().trim();
-      if (wineProducer === extractedProducer) {
+      const producerMatch = fuzzyMatch(extracted.producer, wine.producer);
+      if (producerMatch.exact) {
+        score += 40; // Exact producer match
+      } else if (producerMatch.partial) {
+        score += 25; // Partial producer match
+      }
+    }
+
+    // Appellation matching (primary)
+    if (extracted.appellation && wine.appellation) {
+      const appellationMatch = fuzzyMatch(extracted.appellation, wine.appellation);
+      if (appellationMatch.exact) {
+        score += 25; // Exact appellation match
+      } else if (appellationMatch.partial) {
+        score += 15; // Partial appellation match
+      }
+    }
+
+    // Cru matching (secondary)
+    if (extracted.cru && wine.cru) {
+      const cruMatch = fuzzyMatch(extracted.cru, wine.cru);
+      if (cruMatch.exact) {
         score += 15;
-      } else if (wineProducer.includes(extractedProducer) || extractedProducer.includes(wineProducer)) {
+      } else if (cruMatch.partial) {
         score += 10;
       }
     }
 
-    // Region matching
+    // Vineyard matching (secondary)
+    if (extracted.vineyard && wine.vineyard) {
+      const vineyardMatch = fuzzyMatch(extracted.vineyard, wine.vineyard);
+      if (vineyardMatch.exact) {
+        score += 15;
+      } else if (vineyardMatch.partial) {
+        score += 10;
+      }
+    }
+
+    // Region matching (bonus)
     if (extracted.region && wine.region) {
       if (wine.region.toLowerCase() === extracted.region.toLowerCase()) {
         score += 5;
@@ -368,12 +382,12 @@ export async function findMatchingWine(
   const bestMatch = scoredWines[0];
 
   // Determine confidence level
-  // High: exact name + vintage match (75+) or very high score
-  // Medium: good partial match (30+)
-  const confidence: "high" | "medium" = bestMatch.score >= 50 ? "high" : "medium";
+  // High: strong match on producer + vintage or producer + appellation (65+)
+  // Medium: partial matches (30+)
+  const confidence: "high" | "medium" = bestMatch.score >= 65 ? "high" : "medium";
 
   // Only return matches above a minimum threshold
-  if (bestMatch.score < 20) {
+  if (bestMatch.score < 30) {
     return null;
   }
 

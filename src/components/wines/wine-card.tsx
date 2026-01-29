@@ -3,6 +3,7 @@ import { Wine as WineIcon } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Wine } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface WineCardProps {
   wine: Wine;
@@ -17,7 +18,7 @@ export function WineCard({ wine }: WineCardProps) {
             {wine.image_url ? (
               <img
                 src={wine.image_url}
-                alt={wine.name}
+                alt={getWineDisplayName(wine)}
                 className="w-16 h-20 object-cover rounded"
               />
             ) : (
@@ -26,16 +27,8 @@ export function WineCard({ wine }: WineCardProps) {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold truncate">{wine.name}</h3>
-              {wine.producer && (
-                <p className="text-sm text-muted-foreground truncate">
-                  {wine.producer}
-                </p>
-              )}
+              <h3 className="font-semibold truncate">{getWineDisplayName(wine)}</h3>
               <div className="flex flex-wrap gap-1 mt-2">
-                {wine.vintage && (
-                  <Badge variant="secondary">{wine.vintage}</Badge>
-                )}
                 {wine.color && (
                   <Badge variant="secondary">{wine.color}</Badge>
                 )}

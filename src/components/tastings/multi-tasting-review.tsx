@@ -12,20 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { StarRating } from "@/components/tastings/star-rating";
 import { createTastingsFromScan } from "@/actions/tastings";
 import type { ScannedWineForTasting, WineFormData, Wine } from "@/lib/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface MultiTastingReviewProps {
   scannedWines: ScannedWineForTasting[];
@@ -98,7 +92,6 @@ export function MultiTastingReview({
         } else {
           // Create new wine from extracted data
           const newWine: WineFormData = {
-            name: wine.extracted.name || "Unknown Wine",
             producer: wine.extracted.producer,
             vintage: wine.extracted.vintage,
             region: wine.extracted.region,
@@ -144,10 +137,16 @@ export function MultiTastingReview({
     }
   };
 
-  const getWineDisplayName = (wine: ScannedWineForTasting) => {
-    const name = wine.extracted.name || "Unknown Wine";
-    const vintage = wine.extracted.vintage;
-    return vintage ? `${name} (${vintage})` : name;
+  const getScannedWineDisplayName = (wine: ScannedWineForTasting) => {
+    // Build display name from extracted components
+    const parts = [
+      wine.extracted.vintage?.toString(),
+      wine.extracted.producer,
+      wine.extracted.appellation,
+      wine.extracted.cru,
+      wine.extracted.vineyard,
+    ].filter(Boolean);
+    return parts.join(" ") || "Unknown Wine";
   };
 
   return (
@@ -242,7 +241,7 @@ export function MultiTastingReview({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-muted-foreground">Scanned:</p>
                         <h4 className="font-medium truncate">
-                          {getWineDisplayName(wine)}
+                          {getScannedWineDisplayName(wine)}
                         </h4>
                       </div>
                       <Button
@@ -258,62 +257,60 @@ export function MultiTastingReview({
                     {/* Wine selection dropdown */}
                     <div className="space-y-2 mb-4 pt-3 border-t">
                       <Label className="text-sm">Wine</Label>
-                      <Select
+                      <Combobox
+                        options={[
+                          {
+                            value: "new",
+                            label: "Create new wine",
+                            icon: <AlertTriangle className="h-4 w-4 text-yellow-600" />,
+                          },
+                          {
+                            value: "not_mine",
+                            label: "Not my wine",
+                            icon: <AlertTriangle className="h-4 w-4 text-blue-600" />,
+                          },
+                          ...cellarWines.map((cellarWine) => ({
+                            value: cellarWine.id,
+                            label: getWineDisplayName(cellarWine),
+                            badge: (
+                              <Badge variant="secondary" className="text-xs">
+                                {cellarWine.stock} in stock
+                              </Badge>
+                            ),
+                          })),
+                        ]}
                         value={wine.selectedWineId}
                         onValueChange={(value) => updateSelectedWine(wine.tempId, value as string | "new" | "not_mine")}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a wine...">
-                            {wine.selectedWineId === "new" ? (
+                        placeholder="Select a wine..."
+                        searchPlaceholder="Search wines..."
+                        renderValue={(option, value) => {
+                          if (value === "new") {
+                            return (
                               <span className="flex items-center gap-2">
                                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
                                 Create new wine
                               </span>
-                            ) : wine.selectedWineId === "not_mine" ? (
+                            );
+                          }
+                          if (value === "not_mine") {
+                            return (
                               <span className="flex items-center gap-2">
                                 <AlertTriangle className="h-4 w-4 text-blue-600" />
                                 Not my wine
                               </span>
-                            ) : selectedCellarWine ? (
+                            );
+                          }
+                          if (selectedCellarWine) {
+                            return (
                               <span className="flex items-center gap-2">
                                 <Check className="h-4 w-4 text-green-600" />
-                                {selectedCellarWine.name}
-                                {selectedCellarWine.vintage && ` (${selectedCellarWine.vintage})`}
+                                {getWineDisplayName(selectedCellarWine)}
                               </span>
-                            ) : (
-                              "Select a wine..."
-                            )}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">
-                            <span className="flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                              Create new wine
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="not_mine">
-                            <span className="flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4 text-blue-600" />
-                              Not my wine
-                            </span>
-                          </SelectItem>
-                          <SelectSeparator />
-                          {cellarWines.map((cellarWine) => (
-                            <SelectItem key={cellarWine.id} value={cellarWine.id}>
-                              <span className="flex items-center justify-between gap-4">
-                                <span>
-                                  {cellarWine.name}
-                                  {cellarWine.vintage && ` (${cellarWine.vintage})`}
-                                </span>
-                                <Badge variant="secondary" className="text-xs ml-2">
-                                  {cellarWine.stock} in stock
-                                </Badge>
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            );
+                          }
+                          return "Select a wine...";
+                        }}
+                      />
                     </div>
 
                     {/* Rating and Notes */}

@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 
-export type FieldType = "text" | "number" | "select";
+export type FieldType = "text" | "number" | "select" | "combobox";
 
 export interface SelectOption {
   value: string;
@@ -99,7 +100,23 @@ export function ReferenceDialog({
                     <span className="text-destructive ml-1">*</span>
                   )}
                 </Label>
-                {field.type === "select" ? (
+                {field.type === "combobox" ? (
+                  <Combobox
+                    options={[
+                      ...(!field.required ? [{ value: "", label: "None" }] : []),
+                      ...(field.options?.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      })) || []),
+                    ]}
+                    value={String(values[field.name] ?? "")}
+                    onValueChange={(value) =>
+                      updateValue(field.name, value || null)
+                    }
+                    placeholder={field.placeholder || "Select..."}
+                    searchPlaceholder="Search..."
+                  />
+                ) : field.type === "select" ? (
                   <Select
                     value={String(values[field.name] ?? "")}
                     onValueChange={(value) =>
@@ -113,8 +130,8 @@ export function ReferenceDialog({
                       {!field.required && (
                         <SelectItem value="__none__">None</SelectItem>
                       )}
-                      {field.options?.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                      {field.options?.map((option, index) => (
+                        <SelectItem key={`${option.value}-${index}`} value={option.value}>
                           {option.label}
                         </SelectItem>
                       ))}

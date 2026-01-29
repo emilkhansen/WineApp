@@ -7,6 +7,7 @@ import type {
   GrapeVarietyRef,
   Region,
   Subregion,
+  Commune,
   CruClassification,
   AppellationRef,
   Producer,
@@ -16,6 +17,7 @@ import { ColorsTab } from "@/components/data-model/colors-tab";
 import { GrapesTab } from "@/components/data-model/grapes-tab";
 import { RegionsTab } from "@/components/data-model/regions-tab";
 import { SubregionsTab } from "@/components/data-model/subregions-tab";
+import { CommunesTab } from "@/components/data-model/communes-tab";
 import { CrusTab } from "@/components/data-model/crus-tab";
 import { AppellationsTab } from "@/components/data-model/appellations-tab";
 import { ProducersTab } from "@/components/data-model/producers-tab";
@@ -26,6 +28,7 @@ interface DataModelContentProps {
   grapes: GrapeVarietyRef[];
   regions: Region[];
   subregions: Subregion[];
+  communes: Commune[];
   crus: CruClassification[];
   appellations: AppellationRef[];
   producers: Producer[];
@@ -37,6 +40,7 @@ type TabKey =
   | "grapes"
   | "regions"
   | "subregions"
+  | "communes"
   | "crus"
   | "appellations"
   | "producers"
@@ -53,6 +57,7 @@ export function DataModelContent({
   grapes,
   regions,
   subregions,
+  communes,
   crus,
   appellations,
   producers,
@@ -65,6 +70,7 @@ export function DataModelContent({
     { key: "grapes", label: "Grapes", count: grapes.length },
     { key: "regions", label: "Regions", count: regions.length },
     { key: "subregions", label: "Subregions", count: subregions.length },
+    { key: "communes", label: "Communes", count: communes.length },
     { key: "crus", label: "Crus", count: crus.length },
     { key: "appellations", label: "Appellations", count: appellations.length },
     { key: "producers", label: "Producers", count: producers.length },
@@ -106,6 +112,9 @@ export function DataModelContent({
         {activeTab === "regions" && <RegionsTab initialData={regions} />}
         {activeTab === "subregions" && (
           <SubregionsTab initialData={subregions} regions={regions} />
+        )}
+        {activeTab === "communes" && (
+          <CommunesTab initialData={communes} subregions={subregions} />
         )}
         {activeTab === "crus" && (
           <CrusTab initialData={crus} regions={regions} />

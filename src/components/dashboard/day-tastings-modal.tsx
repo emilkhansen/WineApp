@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { TastingWithWine } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface DayTastingsModalProps {
   date: Date | null;
@@ -46,12 +47,7 @@ export function DayTastingsModal({ date, tastings, loading, onClose }: DayTastin
               >
                 <div className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">{tasting.wine.name}</p>
-                    {tasting.wine.producer && (
-                      <p className="text-sm text-muted-foreground">
-                        {tasting.wine.producer}
-                      </p>
-                    )}
+                    <p className="font-medium">{getWineDisplayName(tasting.wine)}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="flex items-center gap-1 text-sm">
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />

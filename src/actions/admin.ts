@@ -7,6 +7,7 @@ import type {
   GrapeVarietyRef,
   Region,
   Subregion,
+  Commune,
   CruClassification,
   AppellationRef,
   Producer,
@@ -323,6 +324,84 @@ export async function deleteSubregion(id: string): Promise<{ error?: string }> {
 
   if (error) {
     console.error("Error deleting subregion:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/data-model");
+  return {};
+}
+
+// Communes CRUD
+export async function getCommunes(subregionId?: string): Promise<Commune[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("communes")
+    .select("*, subregion:subregions(*, region:regions(*))")
+    .order("name", { ascending: true });
+
+  if (subregionId) {
+    query = query.eq("subregion_id", subregionId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching communes:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function createCommune(
+  name: string,
+  subregionId: string
+): Promise<{ data?: Commune; error?: string }> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("communes")
+    .insert({ name, subregion_id: subregionId })
+    .select("*, subregion:subregions(*, region:regions(*))")
+    .single();
+
+  if (error) {
+    console.error("Error creating commune:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/data-model");
+  return { data };
+}
+
+export async function updateCommune(
+  id: string,
+  name: string,
+  subregionId: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("communes")
+    .update({ name, subregion_id: subregionId })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating commune:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/data-model");
+  return {};
+}
+
+export async function deleteCommune(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("communes").delete().eq("id", id);
+
+  if (error) {
+    console.error("Error deleting commune:", error);
     return { error: error.message };
   }
 

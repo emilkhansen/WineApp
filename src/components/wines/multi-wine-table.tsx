@@ -6,13 +6,7 @@ import { Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -23,30 +17,22 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createWines } from "@/actions/wines";
-import type {
-  ExtractedWineWithId,
-  WineFormData,
-  Color,
-  Region,
-  CruClassification,
-} from "@/lib/types";
+import type { ExtractedWineWithId, WineFormData } from "@/lib/types";
+import type { WineFormReferenceData } from "@/components/wines/wine-form";
 import { toast } from "sonner";
 
 interface MultiWineTableProps {
   wines: ExtractedWineWithId[];
   imageUrl?: string;
-  colors: Color[];
-  regions: Region[];
-  crus: CruClassification[];
+  referenceData: WineFormReferenceData;
 }
 
 export function MultiWineTable({
   wines: initialWines,
   imageUrl,
-  colors,
-  regions,
-  crus,
+  referenceData,
 }: MultiWineTableProps) {
+  const { colors, regions, crus } = referenceData;
   const router = useRouter();
   const [wines, setWines] = useState<ExtractedWineWithId[]>(initialWines);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -99,10 +85,10 @@ export function MultiWineTable({
   };
 
   const handleSaveAll = async () => {
-    // Validate that all wines have names
-    const invalidWines = wines.filter((w) => !w.name?.trim());
+    // Validate that all wines have at least producer or appellation
+    const invalidWines = wines.filter((w) => !w.producer?.trim() && !w.appellation?.trim());
     if (invalidWines.length > 0) {
-      toast.error("All wines must have a name");
+      toast.error("All wines must have a producer or appellation");
       return;
     }
 
@@ -110,7 +96,6 @@ export function MultiWineTable({
 
     try {
       const wineFormData: WineFormData[] = wines.map((w) => ({
-        name: w.name!,
         producer: w.producer,
         vintage: w.vintage,
         region: w.region,
@@ -171,11 +156,11 @@ export function MultiWineTable({
                   />
                 </TableHead>
                 <TableHead className="min-w-[80px]">Position</TableHead>
-                <TableHead className="min-w-[200px]">Name *</TableHead>
                 <TableHead className="min-w-[150px]">Producer</TableHead>
                 <TableHead className="w-24">Vintage</TableHead>
                 <TableHead className="min-w-[140px]">Region</TableHead>
-                <TableHead className="min-w-[160px]">Cru</TableHead>
+                <TableHead className="min-w-[160px]">Appellation</TableHead>
+                <TableHead className="min-w-[140px]">Cru</TableHead>
                 <TableHead className="w-28">Color</TableHead>
                 <TableHead className="w-16"></TableHead>
               </TableRow>
@@ -189,21 +174,11 @@ export function MultiWineTable({
                       onCheckedChange={(checked) =>
                         handleSelectOne(wine.tempId, checked as boolean)
                       }
-                      aria-label={`Select ${wine.name || "wine"}`}
+                      aria-label={`Select ${wine.producer || "wine"}`}
                     />
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {wine.position}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={wine.name || ""}
-                      onChange={(e) =>
-                        handleFieldChange(wine.tempId, "name", e.target.value)
-                      }
-                      placeholder="Wine name"
-                      className="min-w-[180px]"
-                    />
                   </TableCell>
                   <TableCell>
                     <Input
@@ -233,61 +208,79 @@ export function MultiWineTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <Select
+                    <Combobox
+                      options={regions.map((region) => ({
+                        value: region.name,
+                        label: region.name,
+                      }))}
                       value={wine.region || ""}
                       onValueChange={(value) =>
                         handleFieldChange(wine.tempId, "region", value)
                       }
-                    >
-                      <SelectTrigger className="min-w-[120px]">
-                        <SelectValue placeholder="Region" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {regions.map((region) => (
-                          <SelectItem key={region.id} value={region.name}>
-                            {region.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Region"
+                      searchPlaceholder="Search regions..."
+                      className="min-w-[120px]"
+                    />
+                    {wine.originalValues?.region && wine.originalValues.region !== wine.region && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.region}>
+                        AI: {wine.originalValues.region}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Select
+                    <Input
+                      value={wine.appellation || ""}
+                      onChange={(e) =>
+                        handleFieldChange(wine.tempId, "appellation", e.target.value)
+                      }
+                      placeholder="Appellation"
+                      className="min-w-[130px]"
+                    />
+                    {wine.originalValues?.appellation && wine.originalValues.appellation !== wine.appellation && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.appellation}>
+                        AI: {wine.originalValues.appellation}
+                      </p>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Combobox
+                      options={crus.map((cru) => ({
+                        value: cru.name,
+                        label: cru.name,
+                      }))}
                       value={wine.cru || ""}
                       onValueChange={(value) =>
                         handleFieldChange(wine.tempId, "cru", value)
                       }
-                    >
-                      <SelectTrigger className="min-w-[140px]">
-                        <SelectValue placeholder="Cru" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {crus.map((cru) => (
-                          <SelectItem key={cru.id} value={cru.name}>
-                            {cru.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Cru"
+                      searchPlaceholder="Search crus..."
+                      className="min-w-[120px]"
+                    />
+                    {wine.originalValues?.cru && wine.originalValues.cru !== wine.cru && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.cru}>
+                        AI: {wine.originalValues.cru}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Select
+                    <Combobox
+                      options={colors.map((color) => ({
+                        value: color.name,
+                        label: color.name,
+                      }))}
                       value={wine.color || ""}
                       onValueChange={(value) =>
                         handleFieldChange(wine.tempId, "color", value)
                       }
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue placeholder="Color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {colors.map((color) => (
-                          <SelectItem key={color.id} value={color.name}>
-                            {color.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Color"
+                      searchPlaceholder="Search colors..."
+                      className="w-24"
+                    />
+                    {wine.originalValues?.color && wine.originalValues.color !== wine.color && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.color}>
+                        AI: {wine.originalValues.color}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Button

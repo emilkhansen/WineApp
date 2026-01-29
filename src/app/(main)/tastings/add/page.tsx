@@ -9,13 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,6 +20,7 @@ import { findMatchingWine, uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
 import { createClient } from "@/lib/supabase/client";
 import type { Wine as WineType, ScannedWineForTasting, ExtractedWineWithId } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
@@ -71,7 +66,7 @@ export default function AddTastingPage() {
     const { data } = await supabase
       .from("wines")
       .select("*")
-      .order("name");
+      .order("producer");
 
     if (data) {
       setWines(data);
@@ -120,7 +115,7 @@ export default function AddTastingPage() {
           const { data } = await supabase
             .from("wines")
             .select("*")
-            .order("name");
+            .order("producer");
           if (data) {
             setWines(data);
           }
@@ -309,18 +304,17 @@ export default function AddTastingPage() {
                 {/* Wine Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="wine">Wine *</Label>
-                  <Select value={wineId} onValueChange={setWineId}>
-                    <SelectTrigger id="wine">
-                      <SelectValue placeholder={loadingWines ? "Loading wines..." : "Select a wine"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {wines.map((wine) => (
-                        <SelectItem key={wine.id} value={wine.id}>
-                          {wine.name} {wine.vintage && `(${wine.vintage})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={wines.map((wine) => ({
+                      value: wine.id,
+                      label: getWineDisplayName(wine),
+                    }))}
+                    value={wineId}
+                    onValueChange={setWineId}
+                    placeholder={loadingWines ? "Loading wines..." : "Select a wine"}
+                    searchPlaceholder="Search wines..."
+                    disabled={loadingWines}
+                  />
                   {wines.length === 0 && !loadingWines && (
                     <p className="text-sm text-muted-foreground">
                       No wines in your collection.{" "}

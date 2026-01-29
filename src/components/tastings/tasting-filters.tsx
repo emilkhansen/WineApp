@@ -4,14 +4,8 @@ import { useState } from "react";
 import { Search, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Combobox } from "@/components/ui/combobox";
 import { WINE_COLORS } from "@/data/colors";
 
 export interface TastingFilters {
@@ -102,81 +96,70 @@ export function TastingFiltersComponent({
       {/* Filter Controls */}
       {showFilters && (
         <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
-          <Select
-            value={filters.color || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Colors" },
+              ...WINE_COLORS.map((color) => ({ value: color, label: color })),
+            ]}
+            value={filters.color}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, color: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, color: value })
             }
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="All Colors" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Colors</SelectItem>
-              {WINE_COLORS.map((color) => (
-                <SelectItem key={color} value={color}>
-                  {color}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Colors"
+            searchPlaceholder="Search colors..."
+            className="w-36"
+          />
 
-          <Select
-            value={filters.vintage || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Vintages" },
+              ...availableVintages.map((vintage) => ({
+                value: String(vintage),
+                label: String(vintage),
+              })),
+            ]}
+            value={filters.vintage}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, vintage: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, vintage: value })
             }
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="All Vintages" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Vintages</SelectItem>
-              {availableVintages.map((vintage) => (
-                <SelectItem key={vintage} value={String(vintage)}>
-                  {vintage}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Vintages"
+            searchPlaceholder="Search vintages..."
+            className="w-36"
+          />
 
-          <Select
-            value={filters.producer || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Producers" },
+              ...availableProducers.map((producer) => ({
+                value: producer,
+                label: producer,
+              })),
+            ]}
+            value={filters.producer}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, producer: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, producer: value })
             }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Producers" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Producers</SelectItem>
-              {availableProducers.map((producer) => (
-                <SelectItem key={producer} value={producer}>
-                  {producer}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Producers"
+            searchPlaceholder="Search producers..."
+            className="w-48"
+          />
 
-          <Select
-            value={filters.vineyard || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Vineyards" },
+              ...availableVineyards.map((vineyard) => ({
+                value: vineyard,
+                label: vineyard,
+              })),
+            ]}
+            value={filters.vineyard}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, vineyard: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, vineyard: value })
             }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Vineyards" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Vineyards</SelectItem>
-              {availableVineyards.map((vineyard) => (
-                <SelectItem key={vineyard} value={vineyard}>
-                  {vineyard}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Vineyards"
+            searchPlaceholder="Search vineyards..."
+            className="w-48"
+          />
 
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>

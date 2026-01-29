@@ -15,6 +15,9 @@ export interface ComboboxOption {
   value: string;
   label: string;
   description?: string;
+  icon?: React.ReactNode;
+  badge?: React.ReactNode;
+  className?: string;
 }
 
 interface ComboboxProps {
@@ -27,6 +30,7 @@ interface ComboboxProps {
   disabled?: boolean;
   className?: string;
   allowCustomValue?: boolean;
+  renderValue?: (option: ComboboxOption | undefined, value: string) => React.ReactNode;
 }
 
 export function Combobox({
@@ -39,6 +43,7 @@ export function Combobox({
   disabled = false,
   className,
   allowCustomValue = false,
+  renderValue,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -80,12 +85,16 @@ export function Combobox({
           aria-expanded={open}
           className={cn(
             "w-full justify-between font-normal",
-            !displayValue && "text-muted-foreground",
+            !displayValue && !renderValue && "text-muted-foreground",
             className
           )}
           disabled={disabled}
         >
-          <span className="truncate">{displayValue || placeholder}</span>
+          <span className="truncate">
+            {renderValue
+              ? renderValue(selectedOption, value || "")
+              : (displayValue || placeholder)}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -116,27 +125,33 @@ export function Combobox({
               )}
             </CommandEmpty>
             <CommandGroup>
-              {filteredOptions.map((option) => (
+              {filteredOptions.map((option, index) => (
                 <CommandItem
-                  key={option.value}
+                  key={`${option.value}-${index}`}
                   value={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className="cursor-pointer"
+                  className={cn("cursor-pointer", option.className)}
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
+                      "mr-2 h-4 w-4 shrink-0",
                       value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <div className="flex flex-col">
-                    <span>{option.label}</span>
+                  {option.icon && (
+                    <span className="mr-2 shrink-0">{option.icon}</span>
+                  )}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="truncate">{option.label}</span>
                     {option.description && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground truncate">
                         {option.description}
                       </span>
                     )}
                   </div>
+                  {option.badge && (
+                    <span className="ml-2 shrink-0">{option.badge}</span>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

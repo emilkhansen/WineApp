@@ -2,6 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Star, MapPin, Calendar, User } from "lucide-react";
 import type { Tasting, TastingWithWine, TastingWithWineAndAuthor } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface TastingListItemProps {
   tasting: Tasting | TastingWithWine | TastingWithWineAndAuthor;
@@ -26,7 +27,7 @@ export function TastingListItem({ tasting, showWine = true }: TastingListItemPro
       <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
         <div className="flex-1 min-w-0">
           {showWine && isWithWine(tasting) && (
-            <p className="font-medium truncate">{tasting.wine.name}</p>
+            <p className="font-medium truncate">{getWineDisplayName(tasting.wine)}</p>
           )}
           <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
             {authorName && (

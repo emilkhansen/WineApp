@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WineList } from "@/components/wines/wine-list";
+import { ExportWineListButton } from "@/components/wines/export-wine-list-button";
 import { getWines } from "@/actions/wines";
 
 export default async function WinesPage() {
@@ -16,12 +17,15 @@ export default async function WinesPage() {
             {wines.length} {wines.length === 1 ? "wine" : "wines"} in your collection
           </p>
         </div>
-        <Link href="/wines/add">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Wine
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportWineListButton wines={wines} />
+          <Link href="/wines/add">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Wine
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <WineList wines={wines} />

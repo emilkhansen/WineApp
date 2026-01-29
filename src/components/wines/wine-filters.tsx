@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Combobox } from "@/components/ui/combobox";
 import { WINE_REGIONS } from "@/data/regions";
 import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
 import { WINE_COLORS } from "@/data/colors";
@@ -98,62 +99,47 @@ export function WineFiltersComponent({
       {/* Filter Controls */}
       {showFilters && (
         <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
-          <Select
-            value={filters.color || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Colors" },
+              ...WINE_COLORS.map((color) => ({ value: color, label: color })),
+            ]}
+            value={filters.color}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, color: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, color: value })
             }
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="All Colors" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Colors</SelectItem>
-              {WINE_COLORS.map((color) => (
-                <SelectItem key={color} value={color}>
-                  {color}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Colors"
+            searchPlaceholder="Search colors..."
+            className="w-36"
+          />
 
-          <Select
-            value={filters.region || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Regions" },
+              ...WINE_REGIONS.map((region) => ({ value: region, label: region })),
+            ]}
+            value={filters.region}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, region: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, region: value })
             }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Regions" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              {WINE_REGIONS.map((region) => (
-                <SelectItem key={region} value={region}>
-                  {region}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Regions"
+            searchPlaceholder="Search regions..."
+            className="w-48"
+          />
 
-          <Select
-            value={filters.grape || "all"}
+          <Combobox
+            options={[
+              { value: "", label: "All Grapes" },
+              ...ALL_GRAPE_VARIETIES.map((grape) => ({ value: grape, label: grape })),
+            ]}
+            value={filters.grape}
             onValueChange={(value) =>
-              onFiltersChange({ ...filters, grape: value === "all" ? "" : value })
+              onFiltersChange({ ...filters, grape: value })
             }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Grapes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Grapes</SelectItem>
-              {ALL_GRAPE_VARIETIES.map((grape) => (
-                <SelectItem key={grape} value={grape}>
-                  {grape}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="All Grapes"
+            searchPlaceholder="Search grapes..."
+            className="w-48"
+          />
 
           <Select
             value={filters.stockStatus}

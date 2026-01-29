@@ -23,6 +23,7 @@ import type {
   GrapeVarietyRef,
   Region,
   Subregion,
+  Commune,
   CruClassification,
   AppellationRef,
   Producer,
@@ -36,6 +37,7 @@ export interface WineFormReferenceData {
   grapes: GrapeVarietyRef[];
   regions: Region[];
   subregions: Subregion[];
+  communes: Commune[];
   crus: CruClassification[];
   appellations: AppellationRef[];
   producers: Producer[];
@@ -56,6 +58,7 @@ const defaultReferenceData: WineFormReferenceData = {
   grapes: [],
   regions: [],
   subregions: [],
+  communes: [],
   crus: [],
   appellations: [],
   producers: [],
@@ -72,6 +75,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
     grapes: referenceData?.grapes ?? [],
     regions: referenceData?.regions ?? [],
     subregions: referenceData?.subregions ?? [],
+    communes: referenceData?.communes ?? [],
     crus: referenceData?.crus ?? [],
     appellations: referenceData?.appellations ?? [],
     producers: referenceData?.producers ?? [],
@@ -79,11 +83,11 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
   };
 
   const [formData, setFormData] = useState<WineFormData>({
-    name: wine?.name || initialData?.name || "",
     producer: wine?.producer || initialData?.producer || "",
     vintage: wine?.vintage || initialData?.vintage || undefined,
     region: wine?.region || initialData?.region || "",
     subregion: wine?.subregion || initialData?.subregion || "",
+    commune: wine?.commune || initialData?.commune || "",
     grape: wine?.grape || initialData?.grape || "",
     appellation: wine?.appellation || initialData?.appellation || "",
     vineyard: wine?.vineyard || initialData?.vineyard || "",
@@ -127,6 +131,15 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
       .filter((s) => s.region_id === selectedRegion.id)
       .map((s) => ({ value: s.name, label: s.name }));
   }, [safeReferenceData.regions, safeReferenceData.subregions, formData.region]);
+
+  const communeOptions: ComboboxOption[] = useMemo(() => {
+    // Filter communes by selected subregion
+    const selectedSubregion = safeReferenceData.subregions.find((s) => s.name === formData.subregion);
+    if (!selectedSubregion) return [];
+    return safeReferenceData.communes
+      .filter((c) => c.subregion_id === selectedSubregion.id)
+      .map((c) => ({ value: c.name, label: c.name }));
+  }, [safeReferenceData.subregions, safeReferenceData.communes, formData.subregion]);
 
   const cruOptions: ComboboxOption[] = useMemo(() => {
     // Optionally filter by region if set, otherwise show all
@@ -219,9 +232,13 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
 
   const handleChange = (field: keyof WineFormData, value: string | number | undefined) => {
     setFormData((prev) => {
-      // Clear subregion when region changes
+      // Clear subregion and commune when region changes
       if (field === "region") {
-        return { ...prev, [field]: value, subregion: "" };
+        return { ...prev, region: value as string | undefined, subregion: "", commune: "" };
+      }
+      // Clear commune when subregion changes
+      if (field === "subregion") {
+        return { ...prev, subregion: value as string | undefined, commune: "" };
       }
       return { ...prev, [field]: value };
     });
@@ -265,16 +282,6 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <FieldLabel htmlFor="name" field="name">Wine Name *</FieldLabel>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="e.g., Chateau Margaux"
-                required
-              />
-            </div>
-            <div className="space-y-2">
               <FieldLabel htmlFor="producer" field="producer">Producer</FieldLabel>
               <Combobox
                 options={producerOptions}
@@ -286,9 +293,6 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
                 allowCustomValue
               />
             </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <FieldLabel htmlFor="vintage" field="vintage">Vintage</FieldLabel>
               <Input
@@ -301,6 +305,9 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
                 placeholder="e.g., 2019"
               />
             </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="color" field="color">Color</FieldLabel>
               <Combobox
@@ -364,6 +371,18 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <FieldLabel htmlFor="commune" field="commune">Commune</FieldLabel>
+              <Combobox
+                options={communeOptions}
+                value={formData.commune}
+                onValueChange={(value) => handleChange("commune", value)}
+                placeholder="Select commune"
+                searchPlaceholder="Search communes..."
+                emptyText="No communes found"
+                allowCustomValue
+              />
+            </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="appellation" field="appellation">Appellation</FieldLabel>
               <Combobox

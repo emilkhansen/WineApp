@@ -19,53 +19,53 @@ export async function extractWineFromImage(
     const prompt = `You are an expert French wine sommelier analyzing a wine label. Extract information following French wine conventions.
 
 FRENCH WINE LABEL RULES:
-1. NAME: For French wines, the name is typically "Château X", "Domaine X", "Clos X", or the appellation itself. The prominent text on the label is usually the name.
+1. PRODUCER: The estate or producer name. Look for "Château X", "Domaine X", "Clos X", or "Mis en bouteille au château/domaine". For négociants, extract the négociant name.
 
-2. PRODUCER: Often the same as the name for estate wines. Look for "Mis en bouteille au château/domaine" (estate bottled) or a separate négociant name.
+2. APPELLATION: Look for "Appellation [X] Contrôlée" or "AOP [X]" or "AOC [X]". This is the official designation.
 
-3. APPELLATION: Look for "Appellation [X] Contrôlée" or "AOP [X]" or "AOC [X]". This is the official designation.
-
-4. CRU (CLASSIFICATION): Extract as a SEPARATE field. Look for:
+3. CRU (CLASSIFICATION): Extract as a SEPARATE field. Look for:
    - Burgundy: "Grand Cru", "Premier Cru" / "1er Cru"
    - Bordeaux: "Premier Grand Cru Classé", "Grand Cru Classé", "Cru Classé", "Cru Bourgeois"
    - Médoc 1855: "Premier Cru", "Deuxième Cru", etc.
    - Alsace: "Alsace Grand Cru"
    - Champagne: "Grand Cru", "Premier Cru"
 
-5. VINEYARD: The specific lieu-dit or vineyard name ONLY (NOT the classification). Examples: "Les Clos", "Clos de Vougeot", "La Tâche"
+4. VINEYARD: The specific lieu-dit or vineyard name ONLY (NOT the classification). Examples: "Les Clos", "Clos de Vougeot", "La Tâche"
 
-6. VINTAGE: The 4-digit year prominently displayed.
+5. VINTAGE: The 4-digit year prominently displayed.
 
-7. COLOR: Infer from appellation when possible:
+6. COLOR: Infer from appellation when possible:
    - Sauternes, Barsac = Dessert (sweet white)
    - Champagne = Sparkling
    - Most Burgundy reds = Pinot Noir (Red)
    - If "Rosé" or "Clairet" appears = Rosé
    - Look for "Rouge" (red), "Blanc" (white)
 
-8. GRAPE: Only include if explicitly stated. Many French wines don't list grapes.
+7. GRAPE: Only include if explicitly stated. Many French wines don't list grapes.
 
-9. REGION: Infer from appellation:
+8. REGION: Infer from appellation:
    - Margaux, Saint-Émilion, Pauillac, Médoc → Bordeaux
    - Gevrey-Chambertin, Meursault, Chablis → Burgundy
    - Châteauneuf-du-Pape, Côtes du Rhône → Rhône Valley
    - Sancerre, Vouvray, Muscadet → Loire Valley
    - Riesling/Gewurztraminer appellations → Alsace
 
-10. SUBREGION: For the identified region, determine the specific subregion:
+9. SUBREGION: For the identified region, determine the specific subregion:
    - Bordeaux: Left Bank, Right Bank, Médoc, Saint-Émilion, Pomerol, Graves, Sauternes, etc.
    - Burgundy: Côte de Nuits, Côte de Beaune, Chablis, Côte Chalonnaise, Mâconnais
    - Rhône Valley: Northern Rhône, Southern Rhône
    - Loire Valley: Sancerre, Pouilly-Fumé, Vouvray, Chinon, Muscadet, Anjou
    - Napa Valley: Oakville, Rutherford, Stags Leap, etc.
 
+10. COMMUNE: For Burgundy, extract the village/commune name (e.g., Gevrey-Chambertin, Meursault, Puligny-Montrachet, Vosne-Romanée). This is often part of or same as the appellation for village-level wines.
+
 Return ONLY valid JSON with these fields (use null for fields you cannot determine):
 {
-  "name": "the wine's name (Château X, Domaine X, or appellation)",
-  "producer": "the producer/négociant if different from name",
+  "producer": "the estate/producer/négociant name (Château X, Domaine X, etc.)",
   "vintage": 2020,
   "region": "Bordeaux|Burgundy|Champagne|Loire Valley|Rhône Valley|Alsace|Provence|Languedoc-Roussillon|Beaujolais|Jura|Savoie|Sud-Ouest",
   "subregion": "specific subregion within the region",
+  "commune": "village/commune name for Burgundy wines",
   "grape": "only if explicitly stated on label",
   "appellation": "the AOC/AOP designation",
   "vineyard": "specific lieu-dit or vineyard name only",
@@ -154,34 +154,34 @@ export async function extractWinesFromImage(
 IMPORTANT: Count how many distinct wine bottles or labels are visible in the image. Extract data for EACH one.
 
 FRENCH WINE LABEL RULES:
-1. NAME: For French wines, the name is typically "Château X", "Domaine X", "Clos X", or the appellation itself.
+1. PRODUCER: The estate or producer name. Look for "Château X", "Domaine X", "Clos X", or "Mis en bouteille au château/domaine". For négociants, extract the négociant name.
 
-2. PRODUCER: Often the same as the name for estate wines. Look for "Mis en bouteille au château/domaine" (estate bottled) or a separate négociant name.
+2. APPELLATION: Look for "Appellation [X] Contrôlée" or "AOP [X]" or "AOC [X]".
 
-3. APPELLATION: Look for "Appellation [X] Contrôlée" or "AOP [X]" or "AOC [X]".
-
-4. CRU (CLASSIFICATION): Extract as a SEPARATE field. Look for:
+3. CRU (CLASSIFICATION): Extract as a SEPARATE field. Look for:
    - Burgundy: "Grand Cru", "Premier Cru" / "1er Cru"
    - Bordeaux: "Premier Grand Cru Classé", "Grand Cru Classé", "Cru Classé", "Cru Bourgeois"
    - Médoc 1855: "Premier Cru", "Deuxième Cru", etc.
    - Alsace: "Alsace Grand Cru"
 
-5. VINEYARD: The specific lieu-dit or vineyard name ONLY (NOT the classification).
+4. VINEYARD: The specific lieu-dit or vineyard name ONLY (NOT the classification).
 
-6. VINTAGE: The 4-digit year prominently displayed.
+5. VINTAGE: The 4-digit year prominently displayed.
 
-7. COLOR: Infer from appellation when possible.
+6. COLOR: Infer from appellation when possible.
 
-8. GRAPE: Only include if explicitly stated.
+7. GRAPE: Only include if explicitly stated.
 
-9. REGION: Infer from appellation.
+8. REGION: Infer from appellation.
 
-10. SUBREGION: For the identified region, determine the specific subregion:
+9. SUBREGION: For the identified region, determine the specific subregion:
    - Bordeaux: Left Bank, Right Bank, Médoc, Saint-Émilion, Pomerol, Graves, Sauternes, etc.
    - Burgundy: Côte de Nuits, Côte de Beaune, Chablis, Côte Chalonnaise, Mâconnais
    - Rhône Valley: Northern Rhône, Southern Rhône
    - Loire Valley: Sancerre, Pouilly-Fumé, Vouvray, Chinon, Muscadet, Anjou
    - Napa Valley: Oakville, Rutherford, Stags Leap, etc.
+
+10. COMMUNE: For Burgundy, extract the village/commune name.
 
 11. POSITION: Describe where this wine is in the image (e.g., "left bottle", "center", "right bottle", "top left", etc.)
 
@@ -189,11 +189,11 @@ Return ONLY valid JSON array with ALL wines found. Even if there's only one wine
 [
   {
     "position": "left bottle",
-    "name": "wine name",
-    "producer": "producer if different from name",
+    "producer": "estate/producer name (Château X, Domaine X, etc.)",
     "vintage": 2020,
     "region": "Bordeaux|Burgundy|etc.",
     "subregion": "specific subregion",
+    "commune": "village/commune name for Burgundy wines",
     "grape": "only if stated",
     "appellation": "AOC/AOP designation",
     "vineyard": "lieu-dit name only",
@@ -246,7 +246,7 @@ Use null for fields you cannot determine.`;
       return { error: "Could not parse wine data from response" };
     }
 
-    const extracted = JSON.parse(jsonMatch[0]) as Array<ExtractedWineData & { position?: string; cru?: string; subregion?: string }>;
+    const extracted = JSON.parse(jsonMatch[0]) as Array<ExtractedWineData & { position?: string; cru?: string; subregion?: string; commune?: string }>;
 
     // Clean up and add temp IDs
     const cleanedWines: ExtractedWineWithId[] = extracted.map((wine, index) => {
@@ -256,11 +256,11 @@ Use null for fields you cannot determine.`;
       };
 
       // Copy over non-null, non-empty values
-      if (wine.name) cleanedWine.name = wine.name;
       if (wine.producer) cleanedWine.producer = wine.producer;
       if (wine.vintage) cleanedWine.vintage = wine.vintage;
       if (wine.region) cleanedWine.region = wine.region;
       if (wine.subregion) cleanedWine.subregion = wine.subregion;
+      if (wine.commune) cleanedWine.commune = wine.commune;
       if (wine.grape) cleanedWine.grape = wine.grape;
       if (wine.appellation) cleanedWine.appellation = wine.appellation;
       if (wine.vineyard) cleanedWine.vineyard = wine.vineyard;

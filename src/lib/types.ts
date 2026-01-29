@@ -28,6 +28,14 @@ export interface Subregion {
   created_at?: string;
 }
 
+export interface Commune {
+  id: string;
+  name: string;
+  subregion_id: string;
+  subregion?: Subregion;
+  created_at?: string;
+}
+
 export interface CruClassification {
   id: string;
   name: string;
@@ -68,11 +76,11 @@ export interface Vineyard {
 export interface Wine {
   id: string;
   user_id: string;
-  name: string;
   producer: string | null;
   vintage: number | null;
   region: string | null;
   subregion: string | null;
+  commune: string | null;
   grape: string | null;
   appellation: string | null;
   vineyard: string | null;
@@ -112,11 +120,11 @@ export interface TastingWithWineAndAuthor extends TastingWithWine {
 }
 
 export interface WineFormData {
-  name: string;
   producer?: string;
   vintage?: number;
   region?: string;
   subregion?: string;
+  commune?: string;
   grape?: string;
   appellation?: string;
   vineyard?: string;
@@ -137,11 +145,11 @@ export interface TastingFormData {
 }
 
 export interface ExtractedWineData {
-  name?: string;
   producer?: string;
   vintage?: number;
   region?: string;
   subregion?: string;
+  commune?: string;
   grape?: string;
   appellation?: string;
   vineyard?: string;
@@ -153,6 +161,7 @@ export interface ExtractedWineData {
 export interface ExtractedWineWithId extends ExtractedWineData {
   tempId: string;
   position?: string;
+  originalValues?: Partial<ExtractedWineData>;  // Stores original AI-extracted values before matching
 }
 
 // Friends Feature Types

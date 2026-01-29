@@ -9,6 +9,7 @@ import { getTastingsForWine } from "@/actions/tastings";
 import { StockAdjuster } from "@/components/wines/stock-adjuster";
 import { DeleteWineButton } from "@/components/wines/delete-wine-button";
 import { TastingListItem } from "@/components/tastings/tasting-list-item";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface WineDetailPageProps {
   params: Promise<{ id: string }>;
@@ -33,7 +34,7 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold flex-1">{wine.name}</h1>
+        <h1 className="text-3xl font-bold flex-1">{getWineDisplayName(wine)}</h1>
         {isOwner && (
           <Link href={`/wines/${wine.id}/edit`}>
             <Button variant="outline">
@@ -53,7 +54,7 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
                 {wine.image_url ? (
                   <img
                     src={wine.image_url}
-                    alt={wine.name}
+                    alt={getWineDisplayName(wine)}
                     className="w-32 h-40 object-cover rounded"
                   />
                 ) : (
@@ -162,7 +163,7 @@ export default async function WineDetailPage({ params }: WineDetailPageProps) {
                 <CardTitle className="text-destructive">Danger Zone</CardTitle>
               </CardHeader>
               <CardContent>
-                <DeleteWineButton wineId={wine.id} wineName={wine.name} />
+                <DeleteWineButton wineId={wine.id} wineName={getWineDisplayName(wine)} />
               </CardContent>
             </Card>
           </div>

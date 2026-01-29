@@ -16,6 +16,7 @@ import { StarRating } from "@/components/tastings/star-rating";
 import { updateTasting } from "@/actions/tastings";
 import { createClient } from "@/lib/supabase/client";
 import type { TastingWithWine } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -121,7 +122,7 @@ export default function EditTastingPage() {
             <div>
               <Label>Wine</Label>
               <p className="mt-1 text-sm text-muted-foreground">
-                {tasting.wine.name} {tasting.wine.vintage && `(${tasting.wine.vintage})`}
+                {getWineDisplayName(tasting.wine)}
               </p>
             </div>
 

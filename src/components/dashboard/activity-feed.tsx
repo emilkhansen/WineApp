@@ -4,6 +4,7 @@ import { Star, ArrowRight, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { TastingWithWine, TastingWithWineAndAuthor } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface ActivityFeedProps {
   tastings: (TastingWithWine | TastingWithWineAndAuthor)[];
@@ -41,7 +42,7 @@ export function ActivityFeed({ tastings }: ActivityFeedProps) {
                 <Link key={tasting.id} href={`/tastings/${tasting.id}`}>
                   <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{tasting.wine.name}</p>
+                      <p className="font-medium truncate">{getWineDisplayName(tasting.wine)}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                         {authorName && (
                           <>

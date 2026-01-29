@@ -9,6 +9,7 @@ import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
+import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -53,24 +54,28 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         setExtractedData({});
       } else if (result.data && result.data.length > 0) {
         if (result.data.length === 1) {
-          // Single wine - use existing form
+          // Single wine - match to references and use existing form
           const wine = result.data[0];
+          const matchedWine = matchExtractedWineToReferences(
+            { ...wine, tempId: "single" },
+            referenceData
+          );
           setExtractedData({
-            name: wine.name,
-            producer: wine.producer,
-            vintage: wine.vintage,
-            region: wine.region,
-            grape: wine.grape,
-            appellation: wine.appellation,
-            vineyard: wine.vineyard,
-            cru: wine.cru,
-            color: wine.color,
-            size: wine.size,
+            producer: matchedWine.producer,
+            vintage: matchedWine.vintage,
+            region: matchedWine.region,
+            grape: matchedWine.grape,
+            appellation: matchedWine.appellation,
+            vineyard: matchedWine.vineyard,
+            cru: matchedWine.cru,
+            color: matchedWine.color,
+            size: matchedWine.size,
           });
           toast.success("Wine information extracted successfully");
         } else {
-          // Multiple wines - use table view
-          setExtractedWines(result.data);
+          // Multiple wines - match to references and use table view
+          const matchedWines = matchExtractedWinesToReferences(result.data, referenceData);
+          setExtractedWines(matchedWines);
           setStep("multi");
           toast.success(`${result.data.length} wines detected in image`);
           return;
@@ -175,9 +180,7 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         <MultiWineTable
           wines={extractedWines}
           imageUrl={imageUrl}
-          colors={referenceData.colors}
-          regions={referenceData.regions}
-          crus={referenceData.crus}
+          referenceData={referenceData}
         />
       </div>
     );

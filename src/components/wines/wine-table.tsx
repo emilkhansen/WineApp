@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { toggleWinePublic } from "@/actions/wines";
 import type { Wine } from "@/lib/types";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface WineTableProps {
   wines: Wine[];
@@ -50,8 +51,7 @@ export function WineTable({ wines, showVisibilityToggle = false, emptyMessage = 
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead className="hidden sm:table-cell">Producer</TableHead>
+          <TableHead>Wine</TableHead>
           <TableHead className="hidden md:table-cell">Vintage</TableHead>
           <TableHead className="hidden lg:table-cell">Region</TableHead>
           <TableHead className="hidden md:table-cell">Color</TableHead>
@@ -64,12 +64,7 @@ export function WineTable({ wines, showVisibilityToggle = false, emptyMessage = 
         {wines.map((wine) => (
           <TableRow key={wine.id}>
             <TableCell className="font-medium">
-              <div className="max-w-[200px] truncate">{wine.name}</div>
-            </TableCell>
-            <TableCell className="hidden sm:table-cell">
-              <div className="max-w-[150px] truncate text-muted-foreground">
-                {wine.producer || "-"}
-              </div>
+              <div className="max-w-[300px] truncate">{getWineDisplayName(wine)}</div>
             </TableCell>
             <TableCell className="hidden md:table-cell">
               {wine.vintage || "-"}

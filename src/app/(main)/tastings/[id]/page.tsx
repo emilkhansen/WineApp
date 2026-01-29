@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { getTasting } from "@/actions/tastings";
 import { StarRating } from "@/components/tastings/star-rating";
 import { DeleteTastingButton } from "@/components/tastings/delete-tasting-button";
+import { getWineDisplayName } from "@/lib/wine-utils";
 
 interface TastingDetailPageProps {
   params: Promise<{ id: string }>;
@@ -51,7 +52,7 @@ export default async function TastingDetailPage({ params }: TastingDetailPagePro
                 {tasting.wine.image_url ? (
                   <img
                     src={tasting.wine.image_url}
-                    alt={tasting.wine.name}
+                    alt={getWineDisplayName(tasting.wine)}
                     className="w-16 h-20 object-cover rounded"
                   />
                 ) : (
@@ -60,14 +61,8 @@ export default async function TastingDetailPage({ params }: TastingDetailPagePro
                   </div>
                 )}
                 <div className="flex-1">
-                  <h2 className="font-semibold text-lg">{tasting.wine.name}</h2>
-                  {tasting.wine.producer && (
-                    <p className="text-sm text-muted-foreground">{tasting.wine.producer}</p>
-                  )}
+                  <h2 className="font-semibold text-lg">{getWineDisplayName(tasting.wine)}</h2>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {tasting.wine.vintage && (
-                      <Badge variant="secondary">{tasting.wine.vintage}</Badge>
-                    )}
                     {tasting.wine.region && (
                       <Badge variant="outline">{tasting.wine.region}</Badge>
                     )}
