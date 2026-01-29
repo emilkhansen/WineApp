@@ -32,8 +32,36 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
     setStep("scan");
 
     try {
-      // Upload image first
-      const uploadResult = await uploadWineImage(file);
+      // Convert image to JPEG first (handles HEIC and other formats)
+      let fileToUpload: File | Blob = file;
+      let base64: string;
+      let mimeType: string;
+
+      try {
+        const converted = await convertImageToJpegBase64(file);
+        base64 = converted.base64;
+        mimeType = converted.mimeType;
+
+        // If conversion happened (not a passthrough), create a new Blob for upload
+        if (mimeType === "image/jpeg" && file.type !== "image/jpeg") {
+          const byteCharacters = atob(base64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          fileToUpload = new Blob([byteArray], { type: "image/jpeg" });
+        }
+      } catch (conversionError) {
+        console.error("Image conversion failed:", conversionError);
+        toast.error(conversionError instanceof Error ? conversionError.message : "Failed to process image");
+        setStep("choose");
+        setScanning(false);
+        return;
+      }
+
+      // Upload converted image
+      const uploadResult = await uploadWineImage(fileToUpload);
       if (uploadResult.error) {
         toast.error(`Upload failed: ${uploadResult.error}`);
         setStep("choose");
@@ -41,9 +69,6 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         return;
       }
       setImageUrl(uploadResult.url);
-
-      // Convert image to JPEG base64 (handles HEIC and other formats)
-      const { base64, mimeType } = await convertImageToJpegBase64(file);
 
       // Extract wine data using Claude (supports multiple wines)
       const result = await extractWinesFromImage(base64, mimeType);
@@ -92,37 +117,62 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
     }
   };
 
-  // Convert any image to JPEG base64 (handles HEIC, etc.)
+  // Convert any image to JPEG base64 with timeout and fallback (handles HEIC, etc.)
   const convertImageToJpegBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
     return new Promise((resolve, reject) => {
+      // For JPEG/PNG/WebP, read directly without conversion
+      if (file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp") {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(",")[1];
+          resolve({ base64, mimeType: file.type });
+        };
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // For other formats (HEIC, etc.), try canvas conversion with timeout
       const img = new Image();
       const url = URL.createObjectURL(file);
 
-      img.onload = () => {
-        // Create canvas and draw image
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          URL.revokeObjectURL(url);
-          reject(new Error("Could not get canvas context"));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0);
+      // Timeout after 10 seconds
+      const timeout = setTimeout(() => {
         URL.revokeObjectURL(url);
+        reject(new Error("Image loading timed out. Try using JPEG or PNG format."));
+      }, 10000);
 
-        // Convert to JPEG base64
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-        const base64 = dataUrl.split(",")[1];
-        resolve({ base64, mimeType: "image/jpeg" });
+      img.onload = () => {
+        clearTimeout(timeout);
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+          const base64 = dataUrl.split(",")[1];
+          resolve({ base64, mimeType: "image/jpeg" });
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
       };
 
       img.onerror = () => {
+        clearTimeout(timeout);
         URL.revokeObjectURL(url);
-        reject(new Error("Could not load image"));
+        reject(new Error("Could not load image. Try using JPEG or PNG format."));
       };
 
       img.src = url;
