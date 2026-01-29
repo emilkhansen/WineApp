@@ -208,7 +208,7 @@ export async function toggleWinePublic(id: string, isPublic: boolean) {
   return { success: true };
 }
 
-export async function uploadWineImage(file: File | Blob): Promise<{ url?: string; error?: string }> {
+export async function uploadWineImage(formData: FormData): Promise<{ url?: string; error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -216,25 +216,19 @@ export async function uploadWineImage(file: File | Blob): Promise<{ url?: string
     return { error: "Not authenticated" };
   }
 
-  // Determine file extension from file name (if File) or type (if Blob)
-  let fileExt = "jpg";
-  if (file instanceof File && file.name) {
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    // Use jpg for converted images (HEIC -> JPEG), otherwise use original extension
-    if (ext && ext !== "heic" && ext !== "heif") {
-      fileExt = ext;
-    }
-  } else if (file.type) {
-    // For Blob, derive extension from MIME type
-    const mimeToExt: Record<string, string> = {
-      "image/jpeg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/gif": "gif",
-    };
-    fileExt = mimeToExt[file.type] || "jpg";
+  const file = formData.get("file") as File | Blob | null;
+  if (!file) {
+    return { error: "No file provided" };
   }
 
+  // Determine file extension from MIME type
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  const fileExt = mimeToExt[file.type] || "jpg";
   const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
   const { error } = await supabase.storage

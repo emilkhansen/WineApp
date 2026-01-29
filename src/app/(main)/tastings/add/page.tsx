@@ -85,8 +85,10 @@ export default function AddTastingPage() {
     setStep("scanning");
 
     try {
-      // Upload the image first
-      const uploadResult = await uploadWineImage(file);
+      // Upload the image first using FormData (required for Server Actions)
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadResult = await uploadWineImage(formData);
       if (uploadResult.error || !uploadResult.url) {
         toast.error(uploadResult.error || "Failed to upload image");
         setStep("choose");

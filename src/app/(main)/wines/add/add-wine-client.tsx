@@ -60,8 +60,10 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         return;
       }
 
-      // Upload converted image
-      const uploadResult = await uploadWineImage(fileToUpload);
+      // Upload converted image using FormData (required for Server Actions)
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
+      const uploadResult = await uploadWineImage(formData);
       if (uploadResult.error) {
         toast.error(`Upload failed: ${uploadResult.error}`);
         setStep("choose");
