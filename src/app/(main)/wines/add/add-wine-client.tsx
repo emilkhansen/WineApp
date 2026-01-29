@@ -9,7 +9,7 @@ import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
 import { extractWinesFromImage } from "@/lib/vision";
-import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
+import { convertImageToJpeg, isKnownImageFormat, setDebugLogger } from "@/lib/image-utils";
 import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
@@ -26,9 +26,23 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
   const [extractedWines, setExtractedWines] = useState<ExtractedWineWithId[]>([]);
   const [imageUrl, setImageUrl] = useState<string | undefined>();
 
+  // Debug state for mobile troubleshooting
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const logs: string[] = [];
+    const addLog = (msg: string) => {
+      const entry = `${new Date().toISOString().slice(11,19)} ${msg}`;
+      logs.push(entry);
+      setDebugLog([...logs]);
+    };
+    setDebugLogger(addLog);
+
+    addLog(`File: name="${file.name}" type="${file.type}" size=${file.size}`);
+    addLog(`isKnownFormat: ${isKnownImageFormat(file)}`);
 
     setScanning(true);
     setStep("scan");
@@ -43,6 +57,9 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         // Show converting state for unknown formats (includes HEIC which takes longer)
         if (!isKnownImageFormat(file)) {
           setConverting(true);
+          addLog("Starting conversion (unknown format)...");
+        } else {
+          addLog("Known format, reading directly...");
         }
 
         const converted = await convertImageToJpeg(file);
@@ -50,9 +67,12 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
         mimeType = converted.mimeType;
         fileToUpload = converted.blob;
 
+        addLog(`Conversion OK: mimeType=${mimeType} base64Len=${base64.length}`);
         setConverting(false);
       } catch (conversionError) {
         setConverting(false);
+        const errMsg = conversionError instanceof Error ? conversionError.message : String(conversionError);
+        addLog(`CONVERSION ERROR: ${errMsg}`);
         console.error("Image conversion failed:", conversionError);
         toast.error(conversionError instanceof Error ? conversionError.message : "Failed to process image");
         setStep("choose");
@@ -124,6 +144,30 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
       <div className="container py-8 max-w-2xl">
         <h1 className="text-3xl font-bold mb-8">Add Wine</h1>
 
+        {/* Show debug log if there was an error */}
+        {debugLog.length > 0 && (
+          <Card className="mb-4 border-orange-500">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Debug Log (last attempt)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="p-2 bg-muted rounded text-xs font-mono overflow-auto max-h-48">
+                {debugLog.map((log, i) => (
+                  <div key={i} className="whitespace-pre-wrap break-all">{log}</div>
+                ))}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                onClick={() => setDebugLog([])}
+              >
+                Clear log
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <label htmlFor="wine-image" className="cursor-pointer">
@@ -182,6 +226,14 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
             <p className="text-muted-foreground">
               {converting ? "Converting image..." : "Analyzing wine label..."}
             </p>
+            {/* Debug log for mobile troubleshooting */}
+            {debugLog.length > 0 && (
+              <div className="mt-4 p-3 bg-muted rounded text-xs font-mono text-left w-full max-w-md overflow-auto max-h-48">
+                {debugLog.map((log, i) => (
+                  <div key={i} className="whitespace-pre-wrap break-all">{log}</div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
