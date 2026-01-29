@@ -9,12 +9,19 @@ export async function extractWineFromImage(
 ): Promise<{ data?: ExtractedWineData; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
+  // Pre-flight validation with logging
+  console.log("[vision] extractWineFromImage called, base64 length:", base64Image.length);
+
   if (!apiKey) {
+    console.error("[vision] ANTHROPIC_API_KEY is not set");
     return { error: "Anthropic API key not configured" };
   }
 
+  console.log("[vision] API key present, length:", apiKey.length);
+
   try {
     const anthropic = new Anthropic({ apiKey });
+    console.log("[vision] Starting Claude API call...");
 
     const prompt = `You are an expert French wine sommelier analyzing a wine label. Extract information following French wine conventions.
 
@@ -102,6 +109,8 @@ Return ONLY valid JSON with these fields (use null for fields you cannot determi
       ],
     });
 
+    console.log("[vision] Claude API response received, stop_reason:", message.stop_reason);
+
     // Extract text from the response
     const textContent = message.content.find((block) => block.type === "text");
     if (!textContent || textContent.type !== "text") {
@@ -128,9 +137,15 @@ Return ONLY valid JSON with these fields (use null for fields you cannot determi
 
     return { data: cleanedData };
   } catch (error) {
-    console.error("Claude API error:", error);
+    // Log full error details on server
+    console.error("[vision] Claude API error details:", {
+      name: error instanceof Error ? error.name : "unknown",
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     if (error instanceof Error) {
-      return { error: error.message };
+      return { error: `Claude API: ${error.message}` };
     }
     return { error: "Failed to analyze wine label" };
   }
@@ -142,12 +157,19 @@ export async function extractWinesFromImage(
 ): Promise<{ data?: ExtractedWineWithId[]; error?: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
+  // Pre-flight validation with logging
+  console.log("[vision] extractWinesFromImage called, base64 length:", base64Image.length);
+
   if (!apiKey) {
+    console.error("[vision] ANTHROPIC_API_KEY is not set");
     return { error: "Anthropic API key not configured" };
   }
 
+  console.log("[vision] API key present, length:", apiKey.length);
+
   try {
     const anthropic = new Anthropic({ apiKey });
+    console.log("[vision] Starting Claude API call...");
 
     const prompt = `You are an expert French wine sommelier analyzing an image that may contain ONE OR MORE wine bottles/labels. Extract information for ALL visible wines.
 
@@ -233,6 +255,8 @@ Use null for fields you cannot determine.`;
       ],
     });
 
+    console.log("[vision] Claude API response received, stop_reason:", message.stop_reason);
+
     const textContent = message.content.find((block) => block.type === "text");
     if (!textContent || textContent.type !== "text") {
       return { error: "No text response from Claude" };
@@ -273,9 +297,15 @@ Use null for fields you cannot determine.`;
 
     return { data: cleanedWines };
   } catch (error) {
-    console.error("Claude API error:", error);
+    // Log full error details on server
+    console.error("[vision] Claude API error details:", {
+      name: error instanceof Error ? error.name : "unknown",
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     if (error instanceof Error) {
-      return { error: error.message };
+      return { error: `Claude API: ${error.message}` };
     }
     return { error: "Failed to analyze wine labels" };
   }
