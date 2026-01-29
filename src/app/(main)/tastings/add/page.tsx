@@ -17,7 +17,6 @@ import { StarRating } from "@/components/tastings/star-rating";
 import { MultiTastingReview } from "@/components/tastings/multi-tasting-review";
 import { createTasting } from "@/actions/tastings";
 import { findMatchingWine, uploadWineImage } from "@/actions/wines";
-import { extractWinesFromImage } from "@/lib/vision";
 import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Wine as WineType, ScannedWineForTasting, ExtractedWineWithId } from "@/lib/types";
@@ -123,8 +122,13 @@ export default function AddTastingPage() {
       }
       setImageUrl(uploadResult.url);
 
-      // Extract wines from image
-      const result = await extractWinesFromImage(base64, mimeType);
+      // Extract wines from image using API route (avoids Server Action serialization limits)
+      const extractResponse = await fetch("/api/extract-wines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64Image: base64, mimeType }),
+      });
+      const result = await extractResponse.json();
 
       if (result.error || !result.data || result.data.length === 0) {
         toast.error(result.error || "No wines detected in the image");
