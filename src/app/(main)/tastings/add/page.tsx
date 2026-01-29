@@ -219,7 +219,10 @@ export default function AddTastingPage() {
   };
 
   return (
-    <div className="container py-8 max-w-4xl">
+    <div className={cn(
+      "container py-8",
+      step === "review" ? "max-w-5xl" : "max-w-4xl"
+    )}>
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link href="/tastings">
