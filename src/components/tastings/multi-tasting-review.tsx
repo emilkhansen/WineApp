@@ -152,7 +152,7 @@ export function MultiTastingReview({
   return (
     <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
       {/* Left column - Image preview (sticky on desktop) */}
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      <div className="lg:sticky lg:top-8 lg:self-start">
         <ImagePreviewCard imageUrl={imageUrl} />
       </div>
 

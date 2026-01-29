@@ -302,12 +302,25 @@ export default function AddTastingPage() {
 
       {/* Review step (after scanning) */}
       {step === "review" && (
-        <MultiTastingReview
-          scannedWines={scannedWines}
-          wines={wines}
-          imageUrl={imageUrl}
-          onCancel={handleCancelReview}
-        />
+        <>
+          {/* Header section */}
+          <div className="mb-6">
+            <Button variant="ghost" size="sm" className="mb-2 -ml-2" onClick={handleCancelReview}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <h2 className="text-2xl font-bold">Review Tasting Details</h2>
+            <p className="text-muted-foreground">
+              Confirm wine selections and add your ratings
+            </p>
+          </div>
+          <MultiTastingReview
+            scannedWines={scannedWines}
+            wines={wines}
+            imageUrl={imageUrl}
+            onCancel={handleCancelReview}
+          />
+        </>
       )}
 
       {/* Manual step (select from cellar) */}
