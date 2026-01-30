@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Combobox } from "@/components/ui/combobox";
+import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { StarRating } from "@/components/tastings/star-rating";
 import { createTastingsFromScan } from "@/actions/tastings";
@@ -257,7 +257,7 @@ export function MultiTastingReview({
                     {/* Wine selection dropdown */}
                     <div className="space-y-2 mb-4 pt-3 border-t">
                       <Label className="text-sm">Wine</Label>
-                      <Combobox
+                      <SimpleCombobox
                         options={[
                           {
                             value: "new",

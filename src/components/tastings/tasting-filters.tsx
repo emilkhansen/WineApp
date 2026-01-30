@@ -5,7 +5,7 @@ import { Search, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Combobox } from "@/components/ui/combobox";
+import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import { WINE_COLORS } from "@/data/colors";
 
 export interface TastingFilters {
@@ -96,7 +96,7 @@ export function TastingFiltersComponent({
       {/* Filter Controls */}
       {showFilters && (
         <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Colors" },
               ...WINE_COLORS.map((color) => ({ value: color, label: color })),
@@ -110,7 +110,7 @@ export function TastingFiltersComponent({
             className="w-36"
           />
 
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Vintages" },
               ...availableVintages.map((vintage) => ({
@@ -127,7 +127,7 @@ export function TastingFiltersComponent({
             className="w-36"
           />
 
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Producers" },
               ...availableProducers.map((producer) => ({
@@ -144,7 +144,7 @@ export function TastingFiltersComponent({
             className="w-48"
           />
 
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Vineyards" },
               ...availableVineyards.map((vineyard) => ({

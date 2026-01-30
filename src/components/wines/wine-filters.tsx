@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Combobox } from "@/components/ui/combobox";
+import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import { WINE_REGIONS } from "@/data/regions";
 import { ALL_GRAPE_VARIETIES } from "@/data/grapes";
 import { WINE_COLORS } from "@/data/colors";
@@ -99,7 +99,7 @@ export function WineFiltersComponent({
       {/* Filter Controls */}
       {showFilters && (
         <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Colors" },
               ...WINE_COLORS.map((color) => ({ value: color, label: color })),
@@ -113,7 +113,7 @@ export function WineFiltersComponent({
             className="w-36"
           />
 
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Regions" },
               ...WINE_REGIONS.map((region) => ({ value: region, label: region })),
@@ -127,7 +127,7 @@ export function WineFiltersComponent({
             className="w-48"
           />
 
-          <Combobox
+          <SimpleCombobox
             options={[
               { value: "", label: "All Grapes" },
               ...ALL_GRAPE_VARIETIES.map((grape) => ({ value: grape, label: grape })),

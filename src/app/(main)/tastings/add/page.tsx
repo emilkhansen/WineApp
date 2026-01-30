@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Combobox } from "@/components/ui/combobox";
+import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -346,7 +346,7 @@ export default function AddTastingPage() {
                 {/* Wine Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="wine">Wine *</Label>
-                  <Combobox
+                  <SimpleCombobox
                     options={wines.map((wine) => ({
                       value: wine.id,
                       label: getWineDisplayName(wine),

@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
+import { SimpleCombobox } from "@/components/ui/simple-combobox";
 
 export type FieldType = "text" | "number" | "select" | "combobox";
 
@@ -101,7 +101,7 @@ export function ReferenceDialog({
                   )}
                 </Label>
                 {field.type === "combobox" ? (
-                  <Combobox
+                  <SimpleCombobox
                     options={[
                       ...(!field.required ? [{ value: "", label: "None" }] : []),
                       ...(field.options?.map((option) => ({

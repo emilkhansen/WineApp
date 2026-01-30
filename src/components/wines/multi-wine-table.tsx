@@ -6,7 +6,7 @@ import { Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Combobox } from "@/components/ui/combobox";
+import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import {
   Table,
   TableBody,
@@ -208,7 +208,7 @@ export function MultiWineTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <Combobox
+                    <SimpleCombobox
                       options={regions.map((region) => ({
                         value: region.name,
                         label: region.name,
@@ -243,7 +243,7 @@ export function MultiWineTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Combobox
+                    <SimpleCombobox
                       options={crus.map((cru) => ({
                         value: cru.name,
                         label: cru.name,
@@ -263,7 +263,7 @@ export function MultiWineTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Combobox
+                    <SimpleCombobox
                       options={colors.map((color) => ({
                         value: color.name,
                         label: color.name,

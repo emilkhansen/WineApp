@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { SimpleCombobox, type SimpleComboboxOption } from "@/components/ui/simple-combobox";
 import type {
   Wine,
   WineFormData,
@@ -93,12 +93,12 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
   });
 
   // Convert reference data to combobox options
-  const colorOptions: ComboboxOption[] = useMemo(
+  const colorOptions: SimpleComboboxOption[] = useMemo(
     () => safeReferenceData.colors.map((c) => ({ value: c.name, label: c.name })),
     [safeReferenceData.colors]
   );
 
-  const grapeOptions: ComboboxOption[] = useMemo(
+  const grapeOptions: SimpleComboboxOption[] = useMemo(
     () =>
       safeReferenceData.grapes.map((g) => ({
         value: g.name,
@@ -108,7 +108,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
     [safeReferenceData.grapes]
   );
 
-  const regionOptions: ComboboxOption[] = useMemo(
+  const regionOptions: SimpleComboboxOption[] = useMemo(
     () =>
       safeReferenceData.regions.map((r) => ({
         value: r.name,
@@ -118,7 +118,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
     [safeReferenceData.regions]
   );
 
-  const subregionOptions: ComboboxOption[] = useMemo(() => {
+  const subregionOptions: SimpleComboboxOption[] = useMemo(() => {
     // Filter subregions by selected region
     const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
     if (!selectedRegion) return [];
@@ -127,7 +127,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
       .map((s) => ({ value: s.name, label: s.name }));
   }, [safeReferenceData.regions, safeReferenceData.subregions, formData.region]);
 
-  const cruOptions: ComboboxOption[] = useMemo(() => {
+  const cruOptions: SimpleComboboxOption[] = useMemo(() => {
     // Optionally filter by region if set, otherwise show all
     const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
     return safeReferenceData.crus
@@ -139,7 +139,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
       }));
   }, [safeReferenceData.regions, safeReferenceData.crus, formData.region]);
 
-  const appellationOptions: ComboboxOption[] = useMemo(() => {
+  const appellationOptions: SimpleComboboxOption[] = useMemo(() => {
     // Filter by region if set
     const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
     return safeReferenceData.appellations
@@ -151,7 +151,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
       }));
   }, [safeReferenceData.regions, safeReferenceData.appellations, formData.region]);
 
-  const producerOptions: ComboboxOption[] = useMemo(
+  const producerOptions: SimpleComboboxOption[] = useMemo(
     () =>
       safeReferenceData.producers.map((p) => ({
         value: p.name,
@@ -161,7 +161,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
     [safeReferenceData.producers]
   );
 
-  const vineyardOptions: ComboboxOption[] = useMemo(() => {
+  const vineyardOptions: SimpleComboboxOption[] = useMemo(() => {
     // Filter by region if set
     const selectedRegion = safeReferenceData.regions.find((r) => r.name === formData.region);
     return safeReferenceData.vineyards
@@ -265,7 +265,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="producer" field="producer">Producer</FieldLabel>
-              <Combobox
+              <SimpleCombobox
                 options={producerOptions}
                 value={formData.producer}
                 onValueChange={(value) => handleChange("producer", value)}
@@ -292,7 +292,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="color" field="color">Color</FieldLabel>
-              <Combobox
+              <SimpleCombobox
                 options={colorOptions}
                 value={formData.color}
                 onValueChange={(value) => handleChange("color", value)}
@@ -303,7 +303,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="grape" field="grape">Grape</FieldLabel>
-              <Combobox
+              <SimpleCombobox
                 options={grapeOptions}
                 value={formData.grape}
                 onValueChange={(value) => handleChange("grape", value)}
@@ -326,7 +326,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="region" field="region">Region</FieldLabel>
-              <Combobox
+              <SimpleCombobox
                 options={regionOptions}
                 value={formData.region}
                 onValueChange={(value) => handleChange("region", value)}
@@ -339,7 +339,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
             {subregionOptions.length > 0 && (
               <div className="space-y-2">
                 <FieldLabel htmlFor="subregion" field="subregion">Subregion</FieldLabel>
-                <Combobox
+                <SimpleCombobox
                   options={subregionOptions}
                   value={formData.subregion}
                   onValueChange={(value) => handleChange("subregion", value)}
@@ -355,7 +355,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel htmlFor="appellation" field="appellation">Appellation</FieldLabel>
-              <Combobox
+              <SimpleCombobox
                 options={appellationOptions}
                 value={formData.appellation}
                 onValueChange={(value) => handleChange("appellation", value)}
@@ -367,7 +367,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
             </div>
             <div className="space-y-2">
               <FieldLabel htmlFor="cru" field="cru">Cru Classification</FieldLabel>
-              <Combobox
+              <SimpleCombobox
                 options={cruOptions}
                 value={formData.cru}
                 onValueChange={(value) => handleChange("cru", value)}
@@ -381,7 +381,7 @@ export function WineForm({ wine, initialData, imageUrl, showExtractionStatus, re
 
           <div className="space-y-2">
             <FieldLabel htmlFor="vineyard" field="vineyard">Vineyard / Lieu-dit</FieldLabel>
-            <Combobox
+            <SimpleCombobox
               options={vineyardOptions}
               value={formData.vineyard}
               onValueChange={(value) => handleChange("vineyard", value)}
