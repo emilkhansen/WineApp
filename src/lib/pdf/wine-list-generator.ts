@@ -334,7 +334,7 @@ function buildWineHierarchy(wines: Wine[]): WineHierarchy {
   return hierarchy;
 }
 
-function formatWineLine(wine: Wine): string {
+function formatWineLine(wine: Wine, appellation?: string): string {
   const parts: string[] = [];
 
   // Vintage
@@ -347,8 +347,8 @@ function formatWineLine(wine: Wine): string {
     parts.push(wine.producer);
   }
 
-  // Vineyard / Lieu-dit in citation marks
-  if (wine.vineyard) {
+  // Vineyard / Lieu-dit in citation marks (skip if same as appellation header)
+  if (wine.vineyard && wine.vineyard !== appellation) {
     parts.push(`"${wine.vineyard}"`);
   }
 
@@ -552,7 +552,7 @@ function renderFlatHierarchy(ctx: PdfContext, hierarchy: FlatHierarchy, skipCoun
 
           for (const wine of allWines) {
             ctx.checkNewPage(4);
-            const wineLine = formatWineLine(wine);
+            const wineLine = formatWineLine(wine, appellation !== "_none_" ? appellation : undefined);
             ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
             ctx.currentY += 3.2;
           }
@@ -673,7 +673,7 @@ function renderColorSection(ctx: PdfContext, color: string, hierarchy: WineHiera
 
           for (const wine of allWines) {
             ctx.checkNewPage(4);
-            const wineLine = formatWineLine(wine);
+            const wineLine = formatWineLine(wine, appellation !== "_none_" ? appellation : undefined);
             ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
             ctx.currentY += 3.2;
           }
