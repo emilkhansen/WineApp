@@ -113,20 +113,22 @@ export async function getEnhancedStats(): Promise<EnhancedStats> {
     return {
       cellarSize: 0,
       totalWines: 0,
+      uniqueProducers: 0,
       averageRating: null,
       tastingsThisMonth: 0,
       tastingsTrend: 0,
     };
   }
 
-  // Get wines with stock for cellar size
+  // Get wines with stock for cellar size and producer for unique count
   const { data: winesData } = await supabase
     .from("wines")
-    .select("stock")
+    .select("stock, producer")
     .eq("user_id", user.id);
 
   const cellarSize = winesData?.reduce((acc, w) => acc + (w.stock > 0 ? w.stock : 0), 0) || 0;
   const totalWines = winesData?.length || 0;
+  const uniqueProducers = new Set(winesData?.map((w) => w.producer).filter(Boolean)).size;
 
   // Get average rating
   const { data: ratingData } = await supabase
@@ -169,6 +171,7 @@ export async function getEnhancedStats(): Promise<EnhancedStats> {
   return {
     cellarSize,
     totalWines,
+    uniqueProducers,
     averageRating,
     tastingsThisMonth: tastingsThisMonth || 0,
     tastingsTrend,

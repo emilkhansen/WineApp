@@ -211,6 +211,7 @@ export interface CreateTastingFromScanInput {
 export interface EnhancedStats {
   cellarSize: number;
   totalWines: number;
+  uniqueProducers: number;
   averageRating: number | null;
   tastingsThisMonth: number;
   tastingsTrend: number;

@@ -1,4 +1,4 @@
-import { Wine, Star, Calendar, Archive, TrendingUp, TrendingDown } from "lucide-react";
+import { Wine, Star, Calendar, Archive, TrendingUp, TrendingDown, Users } from "lucide-react";
 import type { EnhancedStats } from "@/lib/types";
 
 interface StatsCardsProps {
@@ -18,6 +18,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <Wine className="h-4 w-4 text-primary" />
         <span className="text-lg font-semibold">{stats.totalWines}</span>
         <span className="text-xs text-muted-foreground">wines</span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 text-blue-500" />
+        <span className="text-lg font-semibold">{stats.uniqueProducers}</span>
+        <span className="text-xs text-muted-foreground">producers</span>
       </div>
 
       <div className="flex items-center gap-2">
