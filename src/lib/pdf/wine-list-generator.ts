@@ -1,6 +1,5 @@
 import { jsPDF } from "jspdf";
 import type { Wine } from "@/lib/types";
-import { WINE_CRUS } from "@/data/crus";
 
 // Wine color categories in display order (excluding special sections)
 const COLOR_ORDER = ["Red", "White", "Rosé", "Orange", "Sparkling"];
@@ -277,7 +276,7 @@ interface WineHierarchy {
     [country: string]: {
       [region: string]: {
         [subregion: string]: {
-          [commune: string]: {
+          [appellation: string]: {
             [cru: string]: Wine[];
           };
         };
@@ -294,17 +293,17 @@ function buildWineHierarchy(wines: Wine[]): WineHierarchy {
     const country = getCountry(wine.region);
     const region = wine.region || "Unknown";
     const subregion = wine.subregion || "_none_";
-    const commune = wine.commune || "_none_";
+    const appellation = wine.appellation || "_none_";
     const cru = wine.cru || "_none_";
 
     if (!hierarchy[color]) hierarchy[color] = {};
     if (!hierarchy[color][country]) hierarchy[color][country] = {};
     if (!hierarchy[color][country][region]) hierarchy[color][country][region] = {};
     if (!hierarchy[color][country][region][subregion]) hierarchy[color][country][region][subregion] = {};
-    if (!hierarchy[color][country][region][subregion][commune]) hierarchy[color][country][region][subregion][commune] = {};
-    if (!hierarchy[color][country][region][subregion][commune][cru]) hierarchy[color][country][region][subregion][commune][cru] = [];
+    if (!hierarchy[color][country][region][subregion][appellation]) hierarchy[color][country][region][subregion][appellation] = {};
+    if (!hierarchy[color][country][region][subregion][appellation][cru]) hierarchy[color][country][region][subregion][appellation][cru] = [];
 
-    hierarchy[color][country][region][subregion][commune][cru].push(wine);
+    hierarchy[color][country][region][subregion][appellation][cru].push(wine);
   }
 
   // Sort wines within each cru by vintage (youngest first), then producer, then name
@@ -312,9 +311,9 @@ function buildWineHierarchy(wines: Wine[]): WineHierarchy {
     for (const country of Object.keys(hierarchy[color])) {
       for (const region of Object.keys(hierarchy[color][country])) {
         for (const subregion of Object.keys(hierarchy[color][country][region])) {
-          for (const commune of Object.keys(hierarchy[color][country][region][subregion])) {
-            for (const cru of Object.keys(hierarchy[color][country][region][subregion][commune])) {
-              hierarchy[color][country][region][subregion][commune][cru].sort((a, b) => {
+          for (const appellation of Object.keys(hierarchy[color][country][region][subregion])) {
+            for (const cru of Object.keys(hierarchy[color][country][region][subregion][appellation])) {
+              hierarchy[color][country][region][subregion][appellation][cru].sort((a, b) => {
                 // Sort by vintage descending (youngest first)
                 const vintageA = a.vintage || 0;
                 const vintageB = b.vintage || 0;
@@ -385,7 +384,7 @@ type FlatHierarchy = {
   [country: string]: {
     [region: string]: {
       [subregion: string]: {
-        [commune: string]: {
+        [appellation: string]: {
           [cru: string]: Wine[];
         };
       };
@@ -400,25 +399,25 @@ function buildFlatHierarchy(wines: Wine[]): FlatHierarchy {
     const country = getCountry(wine.region);
     const region = wine.region || "Unknown";
     const subregion = wine.subregion || "_none_";
-    const commune = wine.commune || "_none_";
+    const appellation = wine.appellation || "_none_";
     const cru = wine.cru || "_none_";
 
     if (!hierarchy[country]) hierarchy[country] = {};
     if (!hierarchy[country][region]) hierarchy[country][region] = {};
     if (!hierarchy[country][region][subregion]) hierarchy[country][region][subregion] = {};
-    if (!hierarchy[country][region][subregion][commune]) hierarchy[country][region][subregion][commune] = {};
-    if (!hierarchy[country][region][subregion][commune][cru]) hierarchy[country][region][subregion][commune][cru] = [];
+    if (!hierarchy[country][region][subregion][appellation]) hierarchy[country][region][subregion][appellation] = {};
+    if (!hierarchy[country][region][subregion][appellation][cru]) hierarchy[country][region][subregion][appellation][cru] = [];
 
-    hierarchy[country][region][subregion][commune][cru].push(wine);
+    hierarchy[country][region][subregion][appellation][cru].push(wine);
   }
 
   // Sort wines within each cru
   for (const country of Object.keys(hierarchy)) {
     for (const region of Object.keys(hierarchy[country])) {
       for (const subregion of Object.keys(hierarchy[country][region])) {
-        for (const commune of Object.keys(hierarchy[country][region][subregion])) {
-          for (const cru of Object.keys(hierarchy[country][region][subregion][commune])) {
-            hierarchy[country][region][subregion][commune][cru].sort((a, b) => {
+        for (const appellation of Object.keys(hierarchy[country][region][subregion])) {
+          for (const cru of Object.keys(hierarchy[country][region][subregion][appellation])) {
+            hierarchy[country][region][subregion][appellation][cru].sort((a, b) => {
               const vintageA = a.vintage || 0;
               const vintageB = b.vintage || 0;
               if (vintageB !== vintageA) return vintageB - vintageA;
@@ -500,7 +499,7 @@ function renderFlatHierarchy(ctx: PdfContext, hierarchy: FlatHierarchy, skipCoun
       });
 
       for (const subregion of subregions) {
-        const communesBySubregion = hierarchy[country][region][subregion];
+        const appellationsBySubregion = hierarchy[country][region][subregion];
 
         if (subregion !== "_none_") {
           ctx.checkNewPage(6);
@@ -512,29 +511,29 @@ function renderFlatHierarchy(ctx: PdfContext, hierarchy: FlatHierarchy, skipCoun
           ctx.currentY += 4;
         }
 
-        const communes = Object.keys(communesBySubregion).sort((a, b) => {
+        const appellations = Object.keys(appellationsBySubregion).sort((a, b) => {
           if (a === "_none_") return 1;
           if (b === "_none_") return -1;
           return a.localeCompare(b);
         });
 
-        for (const commune of communes) {
-          const crusByCommune = communesBySubregion[commune];
+        for (const appellation of appellations) {
+          const crusByAppellation = appellationsBySubregion[appellation];
 
-          if (commune !== "_none_") {
+          if (appellation !== "_none_") {
             ctx.checkNewPage(5);
             ctx.doc.setFontSize(7.5);
             ctx.doc.setFont("times", "normal");
             ctx.doc.setTextColor(80, 80, 80);
-            ctx.doc.text(commune, ctx.wineRowMargin, ctx.currentY);
+            ctx.doc.text(appellation, ctx.wineRowMargin, ctx.currentY);
             ctx.doc.setTextColor(0, 0, 0);
             ctx.currentY += 3.5;
           }
 
           // Collect all wines from all crus and sort by cru order, then vintage
           const allWines: Wine[] = [];
-          for (const cru of Object.keys(crusByCommune)) {
-            allWines.push(...crusByCommune[cru]);
+          for (const cru of Object.keys(crusByAppellation)) {
+            allWines.push(...crusByAppellation[cru]);
           }
           allWines.sort((a, b) => {
             const cruOrderA = getCruOrder(a.cru || "_none_");
@@ -621,7 +620,7 @@ function renderColorSection(ctx: PdfContext, color: string, hierarchy: WineHiera
       });
 
       for (const subregion of subregions) {
-        const communesBySubregion = hierarchy[color][country][region][subregion];
+        const appellationsBySubregion = hierarchy[color][country][region][subregion];
 
         if (subregion !== "_none_") {
           ctx.checkNewPage(6);
@@ -633,29 +632,29 @@ function renderColorSection(ctx: PdfContext, color: string, hierarchy: WineHiera
           ctx.currentY += 4;
         }
 
-        const communes = Object.keys(communesBySubregion).sort((a, b) => {
+        const appellations = Object.keys(appellationsBySubregion).sort((a, b) => {
           if (a === "_none_") return 1;
           if (b === "_none_") return -1;
           return a.localeCompare(b);
         });
 
-        for (const commune of communes) {
-          const crusByCommune = communesBySubregion[commune];
+        for (const appellation of appellations) {
+          const crusByAppellation = appellationsBySubregion[appellation];
 
-          if (commune !== "_none_") {
+          if (appellation !== "_none_") {
             ctx.checkNewPage(5);
             ctx.doc.setFontSize(7.5);
             ctx.doc.setFont("times", "normal");
             ctx.doc.setTextColor(80, 80, 80);
-            ctx.doc.text(commune, ctx.wineRowMargin, ctx.currentY);
+            ctx.doc.text(appellation, ctx.wineRowMargin, ctx.currentY);
             ctx.doc.setTextColor(0, 0, 0);
             ctx.currentY += 3.5;
           }
 
           // Collect all wines from all crus and sort by cru order, then vintage
           const allWines: Wine[] = [];
-          for (const cru of Object.keys(crusByCommune)) {
-            allWines.push(...crusByCommune[cru]);
+          for (const cru of Object.keys(crusByAppellation)) {
+            allWines.push(...crusByAppellation[cru]);
           }
           allWines.sort((a, b) => {
             const cruOrderA = getCruOrder(a.cru || "_none_");

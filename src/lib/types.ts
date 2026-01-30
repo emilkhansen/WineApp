@@ -28,14 +28,6 @@ export interface Subregion {
   created_at?: string;
 }
 
-export interface Commune {
-  id: string;
-  name: string;
-  subregion_id: string;
-  subregion?: Subregion;
-  created_at?: string;
-}
-
 export interface CruClassification {
   id: string;
   name: string;
@@ -80,7 +72,6 @@ export interface Wine {
   vintage: number | null;
   region: string | null;
   subregion: string | null;
-  commune: string | null;
   grape: string | null;
   appellation: string | null;
   vineyard: string | null;
@@ -124,7 +115,6 @@ export interface WineFormData {
   vintage?: number;
   region?: string;
   subregion?: string;
-  commune?: string;
   grape?: string;
   appellation?: string;
   vineyard?: string;
@@ -149,7 +139,6 @@ export interface ExtractedWineData {
   vintage?: number;
   region?: string;
   subregion?: string;
-  commune?: string;
   grape?: string;
   appellation?: string;
   vineyard?: string;

@@ -9,7 +9,6 @@ import {
   getGrapeVarieties,
   getRegions,
   getSubregions,
-  getCommunes,
   getCruClassifications,
   getAppellations,
   getProducers,
@@ -30,13 +29,12 @@ export default async function EditWinePage({ params }: EditWinePageProps) {
 
   const { wine } = result;
 
-  const [colors, grapes, regions, subregions, communes, crus, appellations, producers, vineyards] =
+  const [colors, grapes, regions, subregions, crus, appellations, producers, vineyards] =
     await Promise.all([
       getColors(),
       getGrapeVarieties(),
       getRegions(),
       getSubregions(),
-      getCommunes(),
       getCruClassifications(),
       getAppellations(),
       getProducers(),
@@ -48,7 +46,6 @@ export default async function EditWinePage({ params }: EditWinePageProps) {
     grapes,
     regions,
     subregions,
-    communes,
     crus,
     appellations,
     producers,

@@ -70,9 +70,7 @@ FRENCH WINE LABEL RULES:
    - Loire Valley: Sancerre, Pouilly-Fumé, Vouvray, Chinon, Muscadet, Anjou
    - Napa Valley: Oakville, Rutherford, Stags Leap, etc.
 
-10. COMMUNE: For Burgundy, extract the village/commune name.
-
-11. POSITION: Describe where this wine is in the image (e.g., "left bottle", "center", "right bottle", "top left", etc.)
+10. POSITION: Describe where this wine is in the image (e.g., "left bottle", "center", "right bottle", "top left", etc.)
 
 Return ONLY valid JSON array with ALL wines found. Even if there's only one wine, return an array.
 [
@@ -82,7 +80,6 @@ Return ONLY valid JSON array with ALL wines found. Even if there's only one wine
     "vintage": 2020,
     "region": "Bordeaux|Burgundy|etc.",
     "subregion": "specific subregion",
-    "commune": "village/commune name for Burgundy wines",
     "grape": "only if stated",
     "appellation": "AOC/AOP designation",
     "vineyard": "lieu-dit name only",
@@ -144,7 +141,7 @@ Use null for fields you cannot determine.`;
     }
 
     const extracted = JSON.parse(jsonMatch[0]) as Array<
-      ExtractedWineData & { position?: string; cru?: string; subregion?: string; commune?: string }
+      ExtractedWineData & { position?: string; cru?: string; subregion?: string }
     >;
 
     // Clean up and add temp IDs
@@ -159,7 +156,6 @@ Use null for fields you cannot determine.`;
       if (wine.vintage) cleanedWine.vintage = wine.vintage;
       if (wine.region) cleanedWine.region = wine.region;
       if (wine.subregion) cleanedWine.subregion = wine.subregion;
-      if (wine.commune) cleanedWine.commune = wine.commune;
       if (wine.grape) cleanedWine.grape = wine.grape;
       if (wine.appellation) cleanedWine.appellation = wine.appellation;
       if (wine.vineyard) cleanedWine.vineyard = wine.vineyard;
