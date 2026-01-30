@@ -66,8 +66,10 @@ export default async function DashboardPage() {
       </div>
 
       {/* Activity/Trends + Calendar Row */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_200px] mb-4">
-        <ActivityTrendsTabs tastings={recentTastings} trendData={tastingTrends} />
+      <div className="grid gap-4 lg:grid-cols-[1fr_200px] mb-4 min-w-0">
+        <div className="min-w-0">
+          <ActivityTrendsTabs tastings={recentTastings} trendData={tastingTrends} />
+        </div>
         <div className="hidden lg:block">
           <TastingCalendar initialTastingDates={tastingDates} />
         </div>
