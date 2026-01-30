@@ -217,3 +217,33 @@ export interface CreateTastingFromScanInput {
   rating: number;
   notes?: string;
 }
+
+// Dashboard Chart Types
+export interface EnhancedStats {
+  cellarSize: number;
+  totalWines: number;
+  averageRating: number | null;
+  tastingsThisMonth: number;
+  tastingsTrend: number;
+}
+
+export interface DistributionData {
+  byColor: { name: string; count: number; fill: string }[];
+  byRegion: { name: string; count: number }[];
+}
+
+export interface TrendData {
+  month: string;
+  count: number;
+}
+
+export interface RatingDistribution {
+  rating: number;
+  count: number;
+  percentage: number;
+}
+
+export interface TopListsData {
+  regions: { name: string; count: number }[];
+  producers: { name: string; count: number }[];
+}

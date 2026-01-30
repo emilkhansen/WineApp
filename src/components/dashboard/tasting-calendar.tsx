@@ -121,25 +121,33 @@ export function TastingCalendar({ initialTastingDates }: TastingCalendarProps) {
               const hasTastings = tastingDates[dateStr] > 0;
               const isToday = isSameDay(day, new Date());
 
+              // Calculate heatmap intensity (1-4 scale)
+              const count = tastingDates[dateStr] || 0;
+              const intensity = Math.min(count, 4);
+              const heatmapStyles: Record<number, string> = {
+                1: "bg-primary/25",
+                2: "bg-primary/50",
+                3: "bg-primary/75",
+                4: "bg-primary",
+              };
+
               return (
                 <button
                   key={dateStr}
                   onClick={() => handleDayClick(day)}
                   disabled={!hasTastings}
                   className={cn(
-                    "aspect-square flex flex-col items-center justify-center rounded-md text-sm relative",
+                    "aspect-square flex flex-col items-center justify-center rounded-md text-sm relative transition-colors",
                     !isSameMonth(day, currentMonth) && "text-muted-foreground/50",
-                    isToday && "bg-accent",
-                    hasTastings && "hover:bg-muted cursor-pointer",
+                    isToday && !hasTastings && "ring-1 ring-primary",
+                    hasTastings && heatmapStyles[intensity],
+                    hasTastings && intensity >= 3 && "text-primary-foreground",
+                    hasTastings && "hover:opacity-80 cursor-pointer",
                     !hasTastings && "cursor-default"
                   )}
+                  title={hasTastings ? `${count} tasting${count > 1 ? "s" : ""}` : undefined}
                 >
                   <span>{format(day, "d")}</span>
-                  {hasTastings && (
-                    <div className="absolute bottom-1 flex gap-0.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                    </div>
-                  )}
                 </button>
               );
             })}
