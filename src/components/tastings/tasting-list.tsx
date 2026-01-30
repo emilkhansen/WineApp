@@ -123,7 +123,7 @@ export function TastingList({ tastings }: TastingListProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filteredTastings.map((tasting) => (
             <TastingListItem key={tasting.id} tasting={tasting} />
           ))}
