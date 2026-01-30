@@ -271,6 +271,19 @@ function formatCruInline(cru: string): string {
   return cru;
 }
 
+// Size abbreviations for non-standard bottles
+const SIZE_ABBREVIATIONS: Record<string, string> = {
+  "375ml": "Demi",
+  "375 ml": "Demi",
+  "Half": "Demi",
+  "1.5L": "MG",
+  "1.5 L": "MG",
+  "Magnum": "MG",
+  "3L": "Jéro",
+  "3 L": "Jéro",
+  "Double Magnum": "Jéro",
+};
+
 interface WineHierarchy {
   [color: string]: {
     [country: string]: {
@@ -334,8 +347,14 @@ function buildWineHierarchy(wines: Wine[]): WineHierarchy {
   return hierarchy;
 }
 
-function formatWineLine(wine: Wine, appellation?: string): string {
+interface WineLineResult {
+  text: string;
+  sizeAbbrev: string | null;
+}
+
+function formatWineLine(wine: Wine, appellation?: string): WineLineResult {
   const parts: string[] = [];
+  const afterProducer: string[] = [];
 
   // Vintage
   if (wine.vintage) {
@@ -349,20 +368,30 @@ function formatWineLine(wine: Wine, appellation?: string): string {
 
   // Vineyard / Lieu-dit in citation marks (skip if same as appellation header)
   if (wine.vineyard && wine.vineyard !== appellation) {
-    parts.push(`"${wine.vineyard}"`);
+    afterProducer.push(`"${wine.vineyard}"`);
   }
 
   // Cru (always inline, formatted as "1er Cru" or "Grand Cru")
   if (wine.cru) {
-    parts.push(formatCruInline(wine.cru));
+    afterProducer.push(formatCruInline(wine.cru));
   }
 
-  // Size (only if not standard 750ml)
+  // Add dash and after-producer content if any
+  if (afterProducer.length > 0) {
+    parts.push("-");
+    parts.push(...afterProducer);
+  }
+
+  // Size abbreviation (only if not standard 750ml)
+  let sizeAbbrev: string | null = null;
   if (wine.size && wine.size !== "750ml" && wine.size !== "750 ml" && wine.size !== "Standard") {
-    parts.push(`[${wine.size}]`);
+    sizeAbbrev = SIZE_ABBREVIATIONS[wine.size] || wine.size;
   }
 
-  return parts.join("  ");
+  return {
+    text: parts.join("  "),
+    sizeAbbrev,
+  };
 }
 
 // PDF rendering context passed to helper functions
@@ -548,12 +577,22 @@ function renderFlatHierarchy(ctx: PdfContext, hierarchy: FlatHierarchy, skipCoun
           });
 
           ctx.doc.setFontSize(7.5);
-          ctx.doc.setFont("times", "normal");
 
           for (const wine of allWines) {
             ctx.checkNewPage(4);
-            const wineLine = formatWineLine(wine, appellation !== "_none_" ? appellation : undefined);
-            ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
+            const { text, sizeAbbrev } = formatWineLine(wine, appellation !== "_none_" ? appellation : undefined);
+
+            // Render main text in normal font
+            ctx.doc.setFont("times", "normal");
+            ctx.doc.text(text, ctx.wineRowMargin, ctx.currentY);
+
+            // Render size abbreviation in bold if present
+            if (sizeAbbrev) {
+              const textWidth = ctx.doc.getTextWidth(text + "  ");
+              ctx.doc.setFont("times", "bold");
+              ctx.doc.text(sizeAbbrev, ctx.wineRowMargin + textWidth, ctx.currentY);
+            }
+
             ctx.currentY += 3.2;
           }
 
@@ -669,12 +708,22 @@ function renderColorSection(ctx: PdfContext, color: string, hierarchy: WineHiera
           });
 
           ctx.doc.setFontSize(7.5);
-          ctx.doc.setFont("times", "normal");
 
           for (const wine of allWines) {
             ctx.checkNewPage(4);
-            const wineLine = formatWineLine(wine, appellation !== "_none_" ? appellation : undefined);
-            ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
+            const { text, sizeAbbrev } = formatWineLine(wine, appellation !== "_none_" ? appellation : undefined);
+
+            // Render main text in normal font
+            ctx.doc.setFont("times", "normal");
+            ctx.doc.text(text, ctx.wineRowMargin, ctx.currentY);
+
+            // Render size abbreviation in bold if present
+            if (sizeAbbrev) {
+              const textWidth = ctx.doc.getTextWidth(text + "  ");
+              ctx.doc.setFont("times", "bold");
+              ctx.doc.text(sizeAbbrev, ctx.wineRowMargin + textWidth, ctx.currentY);
+            }
+
             ctx.currentY += 3.2;
           }
 
