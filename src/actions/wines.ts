@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Wine, WineFormData, ExtractedWineData } from "@/lib/types";
+import { ensureReferenceData } from "./reference-data";
 
 export async function getWines(): Promise<Wine[]> {
   const supabase = await createClient();
@@ -70,6 +71,9 @@ export async function createWine(formData: WineFormData, imageUrl?: string) {
     return { error: "Not authenticated" };
   }
 
+  // Ensure reference data exists before creating wine
+  await ensureReferenceData(formData);
+
   const { data, error } = await supabase
     .from("wines")
     .insert({
@@ -106,6 +110,9 @@ export async function updateWine(id: string, formData: WineFormData) {
   if (!user) {
     return { error: "Not authenticated" };
   }
+
+  // Ensure reference data exists before updating wine
+  await ensureReferenceData(formData);
 
   const { data, error } = await supabase
     .from("wines")
@@ -259,6 +266,9 @@ export async function createWines(
   if (!user) {
     return { error: "Not authenticated" };
   }
+
+  // Ensure reference data exists for all wines before creating
+  await Promise.all(wines.map(formData => ensureReferenceData(formData)));
 
   const wineRecords = wines.map((formData) => ({
     user_id: user.id,
