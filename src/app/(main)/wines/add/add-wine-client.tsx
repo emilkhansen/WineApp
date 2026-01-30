@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Loader2, ArrowLeft } from "lucide-react";
+import { useState, useRef } from "react";
+import { Upload, Loader2, ArrowLeft, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { WineForm, type WineFormReferenceData } from "@/components/wines/wine-form";
 import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { uploadWineImage } from "@/actions/wines";
 import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
+import { extractPdfPages } from "@/lib/pdf-utils";
 import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
@@ -18,12 +20,21 @@ interface AddWineClientProps {
 }
 
 export function AddWineClient({ referenceData }: AddWineClientProps) {
-  const [step, setStep] = useState<"choose" | "scan" | "manual" | "multi">("choose");
+  const [step, setStep] = useState<"choose" | "scan" | "manual" | "multi" | "pdf">("choose");
   const [scanning, setScanning] = useState(false);
   const [converting, setConverting] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedWineData | null>(null);
   const [extractedWines, setExtractedWines] = useState<ExtractedWineWithId[]>([]);
   const [imageUrl, setImageUrl] = useState<string | undefined>();
+
+  // PDF processing state
+  const [pdfProgress, setPdfProgress] = useState<{
+    currentPage: number;
+    totalPages: number;
+    winesFound: number;
+  } | null>(null);
+  const pdfCancelledRef = useRef(false);
+  const pdfFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -123,12 +134,97 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
     }
   };
 
+  const handlePdfUpload = async (file: File) => {
+    // Check file size (warn if > 15MB)
+    const fileSizeMB = file.size / (1024 * 1024);
+    if (fileSizeMB > 15) {
+      toast.warning(`Large PDF (${fileSizeMB.toFixed(1)}MB). Processing may take a while.`);
+    }
+
+    setStep("pdf");
+    pdfCancelledRef.current = false;
+    setPdfProgress({ currentPage: 0, totalPages: 0, winesFound: 0 });
+
+    const allWines: ExtractedWineWithId[] = [];
+
+    try {
+      for await (const page of extractPdfPages(file)) {
+        // Check if cancelled
+        if (pdfCancelledRef.current) {
+          break;
+        }
+
+        setPdfProgress({
+          currentPage: page.pageNum,
+          totalPages: page.totalPages,
+          winesFound: allWines.length,
+        });
+
+        try {
+          // Use existing extraction endpoint
+          const response = await fetch("/api/extract-wines", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              base64Image: page.dataUrl.split(",")[1],
+              mimeType: "image/jpeg",
+            }),
+          });
+
+          const result = await response.json();
+          if (result.data) {
+            // Add page number to position for clarity
+            const winesWithPage = result.data.map((w: ExtractedWineWithId) => ({
+              ...w,
+              tempId: `wine-${Date.now()}-${page.pageNum}-${Math.random().toString(36).slice(2, 7)}`,
+              position: `Page ${page.pageNum}${w.position ? ` - ${w.position}` : ""}`,
+            }));
+            allWines.push(...winesWithPage);
+          }
+        } catch (pageError) {
+          console.error(`Error processing page ${page.pageNum}:`, pageError);
+          // Continue processing other pages
+        }
+      }
+
+      if (pdfCancelledRef.current) {
+        toast.info("PDF processing cancelled");
+        setStep("choose");
+        setPdfProgress(null);
+        return;
+      }
+
+      if (allWines.length === 0) {
+        toast.error("No wines found in PDF");
+        setStep("choose");
+        setPdfProgress(null);
+        return;
+      }
+
+      // Match to references and show in multi-wine table
+      const matched = matchExtractedWinesToReferences(allWines, referenceData);
+      setExtractedWines(matched);
+      setStep("multi");
+      toast.success(`Found ${allWines.length} wines in PDF`);
+    } catch (error) {
+      console.error("Error processing PDF:", error);
+      toast.error("Failed to process PDF");
+      setStep("choose");
+    } finally {
+      setPdfProgress(null);
+    }
+  };
+
+  const handleCancelPdf = () => {
+    pdfCancelledRef.current = true;
+  };
+
   if (step === "choose") {
     return (
-      <div className="container py-8 max-w-2xl">
+      <div className="container py-8 max-w-3xl">
         <h1 className="text-3xl font-bold mb-8">Add Wine</h1>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <label htmlFor="wine-image" className="cursor-pointer">
               <CardHeader>
@@ -137,7 +233,7 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
                   Scan Label
                 </CardTitle>
                 <CardDescription>
-                  Upload a photo of the wine label and we&apos;ll extract the details automatically
+                  Upload a photo of the wine label
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -150,6 +246,33 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
                 />
                 <Button variant="secondary" className="w-full" asChild>
                   <span>Choose Photo</span>
+                </Button>
+              </CardContent>
+            </label>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <label htmlFor="pdf-file" className="cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Import Wine Card
+                </CardTitle>
+                <CardDescription>
+                  Upload a PDF wine card or menu
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <input
+                  id="pdf-file"
+                  ref={pdfFileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handlePdfUpload(e.target.files[0])}
+                />
+                <Button variant="secondary" className="w-full" asChild>
+                  <span>Choose PDF</span>
                 </Button>
               </CardContent>
             </label>
@@ -186,6 +309,38 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
             <p className="text-muted-foreground">
               {converting ? "Converting image..." : "Analyzing wine label..."}
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === "pdf" && pdfProgress) {
+    return (
+      <div className="container py-8 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-8">Import Wine Card</h1>
+        <Card>
+          <CardContent className="py-12 flex flex-col items-center gap-6">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="text-center space-y-1">
+              <p className="font-medium">Processing wine card...</p>
+              <p className="text-muted-foreground">
+                Page {pdfProgress.currentPage} of {pdfProgress.totalPages || "?"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {pdfProgress.winesFound} wines found so far
+              </p>
+            </div>
+            {pdfProgress.totalPages > 0 && (
+              <Progress
+                value={(pdfProgress.currentPage / pdfProgress.totalPages) * 100}
+                className="w-64"
+              />
+            )}
+            <Button variant="outline" size="sm" onClick={handleCancelPdf}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
           </CardContent>
         </Card>
       </div>
