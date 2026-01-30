@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "cmdk";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export interface ComboboxOption {
   value: string;
@@ -31,6 +32,10 @@ interface ComboboxProps {
   className?: string;
   allowCustomValue?: boolean;
   renderValue?: (option: ComboboxOption | undefined, value: string) => React.ReactNode;
+  onSearch?: (query: string) => Promise<ComboboxOption[]>;
+  debounceMs?: number;
+  minSearchLength?: number;
+  loadingText?: string;
 }
 
 export function Combobox({
@@ -44,14 +49,54 @@ export function Combobox({
   className,
   allowCustomValue = false,
   renderValue,
+  onSearch,
+  debounceMs = 300,
+  minSearchLength = 1,
+  loadingText = "Searching...",
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [asyncOptions, setAsyncOptions] = React.useState<ComboboxOption[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
 
-  const selectedOption = options.find((option) => option.value === value);
+  const debouncedSearch = useDebounce(search, debounceMs);
+
+  const isAsyncMode = !!onSearch;
+
+  React.useEffect(() => {
+    if (!onSearch || debouncedSearch.length < minSearchLength) {
+      setAsyncOptions([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearching(true);
+
+    onSearch(debouncedSearch)
+      .then((results) => {
+        if (!cancelled) {
+          setAsyncOptions(results);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsSearching(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, onSearch, minSearchLength]);
+
+  const effectiveOptions = isAsyncMode ? asyncOptions : options;
+
+  const selectedOption = effectiveOptions.find((option) => option.value === value)
+    || options.find((option) => option.value === value);
   const displayValue = selectedOption?.label || value || "";
 
   const filteredOptions = React.useMemo(() => {
+    if (isAsyncMode) return effectiveOptions;
     if (!search) return options;
     const searchLower = search.toLowerCase();
     return options.filter(
@@ -59,7 +104,7 @@ export function Combobox({
         option.label.toLowerCase().includes(searchLower) ||
         option.description?.toLowerCase().includes(searchLower)
     );
-  }, [options, search]);
+  }, [options, search, isAsyncMode, effectiveOptions]);
 
   const handleSelect = (selectedValue: string) => {
     onValueChange(selectedValue === value ? "" : selectedValue);
@@ -108,53 +153,62 @@ export function Combobox({
             className="h-9"
           />
           <CommandList>
-            <CommandEmpty>
-              {allowCustomValue && search ? (
-                <button
-                  className="w-full px-2 py-1.5 text-sm text-left hover:bg-accent"
-                  onClick={() => {
-                    onValueChange(search);
-                    setOpen(false);
-                    setSearch("");
-                  }}
-                >
-                  Add &quot;{search}&quot;
-                </button>
-              ) : (
-                emptyText
-              )}
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredOptions.map((option, index) => (
-                <CommandItem
-                  key={`${option.value}-${index}`}
-                  value={option.value}
-                  onSelect={() => handleSelect(option.value)}
-                  className={cn("cursor-pointer", option.className)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.icon && (
-                    <span className="mr-2 shrink-0">{option.icon}</span>
+            {isSearching ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm text-muted-foreground">{loadingText}</span>
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>
+                  {allowCustomValue && search ? (
+                    <button
+                      className="w-full px-2 py-1.5 text-sm text-left hover:bg-accent"
+                      onClick={() => {
+                        onValueChange(search);
+                        setOpen(false);
+                        setSearch("");
+                      }}
+                    >
+                      Add &quot;{search}&quot;
+                    </button>
+                  ) : (
+                    emptyText
                   )}
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="truncate">{option.label}</span>
-                    {option.description && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        {option.description}
-                      </span>
-                    )}
-                  </div>
-                  {option.badge && (
-                    <span className="ml-2 shrink-0">{option.badge}</span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                </CommandEmpty>
+                <CommandGroup>
+                  {filteredOptions.map((option, index) => (
+                    <CommandItem
+                      key={`${option.value}-${index}`}
+                      value={option.value}
+                      onSelect={() => handleSelect(option.value)}
+                      className={cn("cursor-pointer", option.className)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          value === option.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.icon && (
+                        <span className="mr-2 shrink-0">{option.icon}</span>
+                      )}
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="truncate">{option.label}</span>
+                        {option.description && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            {option.description}
+                          </span>
+                        )}
+                      </div>
+                      {option.badge && (
+                        <span className="ml-2 shrink-0">{option.badge}</span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

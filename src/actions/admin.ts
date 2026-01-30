@@ -627,3 +627,91 @@ export async function deleteVineyard(id: string): Promise<{ error?: string }> {
   revalidatePath("/data-model");
   return {};
 }
+
+// Search Actions for Async Combobox
+
+export async function searchProducers(query: string): Promise<Producer[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("producers")
+    .select("*, region:regions(*)")
+    .ilike("name", `%${query}%`)
+    .order("name", { ascending: true })
+    .limit(20);
+
+  if (error) {
+    console.error("Error searching producers:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function searchAppellations(
+  query: string,
+  regionId?: string
+): Promise<AppellationRef[]> {
+  const supabase = await createClient();
+  let queryBuilder = supabase
+    .from("appellations")
+    .select("*, region:regions(*), subregion:subregions(*)")
+    .ilike("name", `%${query}%`)
+    .order("name", { ascending: true })
+    .limit(20);
+
+  if (regionId) {
+    queryBuilder = queryBuilder.eq("region_id", regionId);
+  }
+
+  const { data, error } = await queryBuilder;
+
+  if (error) {
+    console.error("Error searching appellations:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function searchVineyards(
+  query: string,
+  regionId?: string
+): Promise<Vineyard[]> {
+  const supabase = await createClient();
+  let queryBuilder = supabase
+    .from("vineyards")
+    .select("*, region:regions(*), appellation:appellations(*)")
+    .ilike("name", `%${query}%`)
+    .order("name", { ascending: true })
+    .limit(20);
+
+  if (regionId) {
+    queryBuilder = queryBuilder.eq("region_id", regionId);
+  }
+
+  const { data, error } = await queryBuilder;
+
+  if (error) {
+    console.error("Error searching vineyards:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function searchGrapeVarieties(query: string): Promise<GrapeVarietyRef[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("grape_varieties")
+    .select("*")
+    .ilike("name", `%${query}%`)
+    .order("name", { ascending: true })
+    .limit(20);
+
+  if (error) {
+    console.error("Error searching grape varieties:", error);
+    return [];
+  }
+
+  return data || [];
+}
