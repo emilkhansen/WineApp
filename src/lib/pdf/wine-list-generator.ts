@@ -229,11 +229,47 @@ function getSubregionOrder(region: string, subregion: string): number {
   return 0; // Default alphabetical for other regions
 }
 
-// Get sort order for crus based on prestige
+// Cru display order: Village → Premier Cru → Grand Cru (ascending quality)
+const CRU_DISPLAY_ORDER = [
+  "Village",
+  "Bourgogne",
+  "Cru Bourgeois",
+  "Cru Bourgeois Supérieur",
+  "Cru Bourgeois Exceptionnel",
+  "Cru Artisan",
+  "Cru du Beaujolais",
+  "IGP",
+  "Vin de France",
+  "Cinquième Cru (1855)",
+  "Quatrième Cru (1855)",
+  "Troisième Cru (1855)",
+  "Deuxième Cru (1855)",
+  "Cru Classé",
+  "Grand Cru Classé",
+  "Premier Cru (1855)",
+  "Premier Grand Cru Classé B",
+  "Premier Grand Cru Classé A",
+  "Premier Cru",
+  "Premier Cru (Champagne)",
+  "Alsace Grand Cru",
+  "Grand Cru",
+  "Grand Cru (Champagne)",
+];
+
+// Get sort order for crus (ascending quality: Village → Premier Cru → Grand Cru)
 function getCruOrder(cru: string): number {
-  if (cru === "_none_") return 9999;
-  const idx = WINE_CRUS.indexOf(cru as typeof WINE_CRUS[number]);
-  return idx >= 0 ? idx : 1000;
+  if (cru === "_none_") return -1; // No cru comes first
+  const idx = CRU_DISPLAY_ORDER.indexOf(cru);
+  return idx >= 0 ? idx : 500; // Unknown crus in middle
+}
+
+// Format cru for inline display (e.g., "Premier Cru" → "1er Cru")
+function formatCruInline(cru: string): string {
+  if (cru === "Premier Cru" || cru === "Premier Cru (Champagne)") return "1er Cru";
+  if (cru === "Grand Cru" || cru === "Grand Cru (Champagne)") return "Grand Cru";
+  if (cru === "Alsace Grand Cru") return "Grand Cru";
+  // Return as-is for other crus (1855 classifications, etc.)
+  return cru;
 }
 
 interface WineHierarchy {
@@ -299,7 +335,7 @@ function buildWineHierarchy(wines: Wine[]): WineHierarchy {
   return hierarchy;
 }
 
-function formatWineLine(wine: Wine, showCru: boolean): string {
+function formatWineLine(wine: Wine): string {
   const parts: string[] = [];
 
   // Vintage
@@ -312,19 +348,14 @@ function formatWineLine(wine: Wine, showCru: boolean): string {
     parts.push(wine.producer);
   }
 
-  // Appellation (if not already showing as region/cru header context)
-  if (wine.appellation) {
-    parts.push(wine.appellation);
-  }
-
   // Vineyard / Lieu-dit in citation marks
   if (wine.vineyard) {
     parts.push(`"${wine.vineyard}"`);
   }
 
-  // Cru (only if not shown as header)
-  if (showCru && wine.cru) {
-    parts.push(wine.cru);
+  // Cru (always inline, formatted as "1er Cru" or "Grand Cru")
+  if (wine.cru) {
+    parts.push(formatCruInline(wine.cru));
   }
 
   // Size (only if not standard 750ml)
@@ -500,41 +531,34 @@ function renderFlatHierarchy(ctx: PdfContext, hierarchy: FlatHierarchy, skipCoun
             ctx.currentY += 3.5;
           }
 
-          const crus = Object.keys(crusByCommune).sort((a, b) => {
-            const orderA = getCruOrder(a);
-            const orderB = getCruOrder(b);
-            if (orderA !== orderB) return orderA - orderB;
-            return a.localeCompare(b);
+          // Collect all wines from all crus and sort by cru order, then vintage
+          const allWines: Wine[] = [];
+          for (const cru of Object.keys(crusByCommune)) {
+            allWines.push(...crusByCommune[cru]);
+          }
+          allWines.sort((a, b) => {
+            const cruOrderA = getCruOrder(a.cru || "_none_");
+            const cruOrderB = getCruOrder(b.cru || "_none_");
+            if (cruOrderA !== cruOrderB) return cruOrderA - cruOrderB;
+            // Then by vintage descending
+            const vintageA = a.vintage || 0;
+            const vintageB = b.vintage || 0;
+            if (vintageB !== vintageA) return vintageB - vintageA;
+            // Then by producer
+            return (a.producer || "").localeCompare(b.producer || "");
           });
 
-          for (const cru of crus) {
-            const winesInCru = crusByCommune[cru];
-            const showCruInLine = cru === "_none_";
+          ctx.doc.setFontSize(7.5);
+          ctx.doc.setFont("times", "normal");
 
-            if (cru !== "_none_") {
-              ctx.checkNewPage(5);
-              ctx.doc.setFontSize(7.5);
-              ctx.doc.setFont("times", "italic");
-              ctx.doc.setTextColor(90, 90, 90);
-              ctx.doc.text(cru, ctx.wineRowMargin, ctx.currentY);
-              ctx.doc.setTextColor(0, 0, 0);
-              ctx.currentY += 3.5;
-            }
-
-            ctx.doc.setFontSize(7.5);
-            ctx.doc.setFont("times", "normal");
-
-            for (const wine of winesInCru) {
-              ctx.checkNewPage(4);
-              const wineLine = formatWineLine(wine, showCruInLine);
-              ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
-              ctx.currentY += 3.2;
-            }
-
-            ctx.currentY += 1.5;
+          for (const wine of allWines) {
+            ctx.checkNewPage(4);
+            const wineLine = formatWineLine(wine);
+            ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
+            ctx.currentY += 3.2;
           }
 
-          ctx.currentY += 1;
+          ctx.currentY += 2.5;
         }
 
         ctx.currentY += 4;
@@ -628,41 +652,34 @@ function renderColorSection(ctx: PdfContext, color: string, hierarchy: WineHiera
             ctx.currentY += 3.5;
           }
 
-          const crus = Object.keys(crusByCommune).sort((a, b) => {
-            const orderA = getCruOrder(a);
-            const orderB = getCruOrder(b);
-            if (orderA !== orderB) return orderA - orderB;
-            return a.localeCompare(b);
+          // Collect all wines from all crus and sort by cru order, then vintage
+          const allWines: Wine[] = [];
+          for (const cru of Object.keys(crusByCommune)) {
+            allWines.push(...crusByCommune[cru]);
+          }
+          allWines.sort((a, b) => {
+            const cruOrderA = getCruOrder(a.cru || "_none_");
+            const cruOrderB = getCruOrder(b.cru || "_none_");
+            if (cruOrderA !== cruOrderB) return cruOrderA - cruOrderB;
+            // Then by vintage descending
+            const vintageA = a.vintage || 0;
+            const vintageB = b.vintage || 0;
+            if (vintageB !== vintageA) return vintageB - vintageA;
+            // Then by producer
+            return (a.producer || "").localeCompare(b.producer || "");
           });
 
-          for (const cru of crus) {
-            const winesInCru = crusByCommune[cru];
-            const showCruInLine = cru === "_none_";
+          ctx.doc.setFontSize(7.5);
+          ctx.doc.setFont("times", "normal");
 
-            if (cru !== "_none_") {
-              ctx.checkNewPage(5);
-              ctx.doc.setFontSize(7.5);
-              ctx.doc.setFont("times", "italic");
-              ctx.doc.setTextColor(90, 90, 90);
-              ctx.doc.text(cru, ctx.wineRowMargin, ctx.currentY);
-              ctx.doc.setTextColor(0, 0, 0);
-              ctx.currentY += 3.5;
-            }
-
-            ctx.doc.setFontSize(7.5);
-            ctx.doc.setFont("times", "normal");
-
-            for (const wine of winesInCru) {
-              ctx.checkNewPage(4);
-              const wineLine = formatWineLine(wine, showCruInLine);
-              ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
-              ctx.currentY += 3.2;
-            }
-
-            ctx.currentY += 1.5;
+          for (const wine of allWines) {
+            ctx.checkNewPage(4);
+            const wineLine = formatWineLine(wine);
+            ctx.doc.text(wineLine, ctx.wineRowMargin, ctx.currentY);
+            ctx.currentY += 3.2;
           }
 
-          ctx.currentY += 1;
+          ctx.currentY += 2.5;
         }
 
         ctx.currentY += 4;
