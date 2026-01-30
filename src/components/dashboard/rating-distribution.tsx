@@ -24,59 +24,49 @@ interface RatingDistributionProps {
 export function RatingDistribution({ data }: RatingDistributionProps) {
   const isEmpty = data.length === 0 || data.every((d) => d.count === 0);
   const total = data.reduce((acc, d) => acc + d.count, 0);
+  const maxCount = Math.max(...data.map(d => d.count), 1);
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Rating Distribution</CardTitle>
-        <p className="text-sm text-muted-foreground">
+        <CardTitle className="text-sm">Ratings</CardTitle>
+        <p className="text-[10px] text-muted-foreground">
           {total > 0 ? `${total} tastings` : "No tastings yet"}
         </p>
       </CardHeader>
       <CardContent>
         {isEmpty ? (
-          <div className="h-[80px] flex items-center justify-center text-muted-foreground">
+          <div className="py-8 flex items-center justify-center text-muted-foreground text-xs">
             No rating data yet
           </div>
         ) : (
           <TooltipProvider>
-            <div className="space-y-3">
-              {/* Stacked horizontal bar */}
-              <div className="h-8 w-full rounded-full overflow-hidden flex">
-                {data.map((item, index) => (
-                  <Tooltip key={item.rating}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className="h-full transition-all hover:opacity-80 cursor-pointer"
-                        style={{
-                          width: `${item.percentage}%`,
-                          backgroundColor: RATING_COLORS[index],
-                          minWidth: item.count > 0 ? "8px" : "0",
-                        }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {item.rating} star{item.rating !== 1 ? "s" : ""}:{" "}
-                        {item.count} ({item.percentage}%)
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-
-              {/* Legend */}
-              <div className="flex justify-between text-xs text-muted-foreground">
-                {data.map((item, index) => (
-                  <div key={item.rating} className="flex items-center gap-1">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: RATING_COLORS[index] }}
-                    />
-                    <span>{item.rating}★</span>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-1.5">
+              {data.map((item, index) => (
+                <Tooltip key={item.rating}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 cursor-pointer">
+                      <span className="text-xs w-5">{item.rating}★</span>
+                      <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
+                        <div
+                          className="h-full rounded transition-all hover:opacity-80"
+                          style={{
+                            width: `${(item.count / maxCount) * 100}%`,
+                            backgroundColor: RATING_COLORS[index],
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs w-6 text-right">{item.count}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {item.rating} star{item.rating !== 1 ? "s" : ""}:{" "}
+                      {item.count} ({item.percentage}%)
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
             </div>
           </TooltipProvider>
         )}

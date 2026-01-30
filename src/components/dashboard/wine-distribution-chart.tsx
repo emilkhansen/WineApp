@@ -1,15 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { DistributionData } from "@/lib/types";
@@ -21,6 +12,10 @@ const REGION_COLORS = [
   "#4A5568",
   "#6B46C1",
   "#2D3748",
+  "#9C4221",
+  "#1E3A5F",
+  "#4A1942",
+  "#2C5530",
 ];
 
 interface WineDistributionChartProps {
@@ -38,17 +33,21 @@ export function WineDistributionChart({ data }: WineDistributionChartProps) {
           fill: REGION_COLORS[i % REGION_COLORS.length],
         }));
 
-  const isEmpty = chartData.length === 0;
+  // Show top 10 items
+  const displayData = chartData.slice(0, 10);
+  const isEmpty = displayData.length === 0;
+  const maxCount = Math.max(...displayData.map(d => d.count), 1);
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg">Wine Distribution</CardTitle>
-        <div className="flex gap-1">
+        <CardTitle className="text-sm">Distribution</CardTitle>
+        <div className="flex gap-0.5">
           <Button
             variant={view === "color" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setView("color")}
+            className="h-6 text-[10px] px-2"
           >
             Color
           </Button>
@@ -56,6 +55,7 @@ export function WineDistributionChart({ data }: WineDistributionChartProps) {
             variant={view === "region" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setView("region")}
+            className="h-6 text-[10px] px-2"
           >
             Region
           </Button>
@@ -63,40 +63,27 @@ export function WineDistributionChart({ data }: WineDistributionChartProps) {
       </CardHeader>
       <CardContent>
         {isEmpty ? (
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+          <div className="py-8 flex items-center justify-center text-muted-foreground text-xs">
             No wine data yet
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
-            >
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-                width={55}
-              />
-              <Tooltip
-                formatter={(value) => [`${value} wines`, "Count"]}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--popover))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "6px",
-                }}
-              />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="space-y-1.5">
+            {displayData.map((item) => (
+              <div key={item.name} className="flex items-center gap-2">
+                <span className="text-xs w-16 truncate">{item.name}</span>
+                <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
+                  <div
+                    className="h-full rounded transition-all"
+                    style={{
+                      width: `${(item.count / maxCount) * 100}%`,
+                      backgroundColor: item.fill,
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-semibold w-6 text-right">{item.count}</span>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

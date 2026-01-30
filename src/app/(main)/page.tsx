@@ -2,10 +2,9 @@ import Link from "next/link";
 import { Plus, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatsCards } from "@/components/dashboard/stats-cards";
-import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { ActivityTrendsTabs } from "@/components/dashboard/activity-trends-tabs";
 import { TastingCalendar } from "@/components/dashboard/tasting-calendar";
 import { WineDistributionChart } from "@/components/dashboard/wine-distribution-chart";
-import { TastingTrendsChart } from "@/components/dashboard/tasting-trends-chart";
 import { RatingDistribution } from "@/components/dashboard/rating-distribution";
 import { TopLists } from "@/components/dashboard/top-lists";
 import {
@@ -41,88 +40,49 @@ export default async function DashboardPage() {
   const recentTastings = tastings.slice(0, 5);
 
   return (
-    <div className="container py-8">
-      {/* Dashboard Header + Quick Actions */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Your wine collection at a glance
-            </p>
-          </div>
-          {/* Desktop: buttons next to title */}
-          <div className="hidden sm:flex gap-2">
-            <Link href="/wines/add">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Wine
-              </Button>
-            </Link>
-            <Link href="/tastings/add">
-              <Button variant="outline">
-                <Wine className="mr-2 h-4 w-4" />
-                Add Tasting
-              </Button>
-            </Link>
-          </div>
-        </div>
-        {/* Mobile: buttons below header */}
-        <div className="flex gap-2 mt-4 sm:hidden">
-          <Link href="/wines/add" className="flex-1">
-            <Button className="w-full">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Wine
+    <div className="container py-4">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-xl font-bold">Dashboard</h1>
+        <div className="flex gap-2">
+          <Link href="/wines/add">
+            <Button size="sm" className="h-8">
+              <Plus className="mr-1 h-3 w-3" />
+              <span className="hidden sm:inline">Add </span>Wine
             </Button>
           </Link>
-          <Link href="/tastings/add" className="flex-1">
-            <Button variant="outline" className="w-full">
-              <Wine className="mr-2 h-4 w-4" />
-              Add Tasting
+          <Link href="/tastings/add">
+            <Button variant="outline" size="sm" className="h-8">
+              <Wine className="mr-1 h-3 w-3" />
+              <span className="hidden sm:inline">Add </span>Tasting
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Stats Cards Row */}
-      <div className="mb-6">
+      {/* Inline Stats Bar */}
+      <div className="mb-4">
         <StatsCards stats={stats} />
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-6 lg:grid-cols-2 mb-6">
-        {/* Wine Distribution Chart */}
-        <div className="min-w-0">
-          <WineDistributionChart data={wineDistribution} />
-        </div>
-
-        {/* Tasting Trends */}
-        <div className="min-w-0">
-          <TastingTrendsChart data={tastingTrends} />
-        </div>
-      </div>
-
-      {/* Rating Distribution and Top Lists */}
-      <div className="grid gap-6 lg:grid-cols-2 mb-6">
-        {/* Rating Distribution */}
-        <div className="min-w-0">
-          <RatingDistribution data={ratingDistribution} />
-        </div>
-
-        {/* Top Regions/Producers */}
-        <div className="min-w-0">
-          <TopLists data={topLists} />
-        </div>
-      </div>
-
-      {/* Activity Feed and Calendar */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="min-w-0">
-          <ActivityFeed tastings={recentTastings} />
-        </div>
-        <div className="min-w-0">
+      {/* Activity/Trends + Calendar Row */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_200px] mb-4">
+        <ActivityTrendsTabs tastings={recentTastings} trendData={tastingTrends} />
+        <div className="hidden lg:block">
           <TastingCalendar initialTastingDates={tastingDates} />
         </div>
+      </div>
+
+      {/* Mobile Calendar (visible only on mobile) */}
+      <div className="lg:hidden mb-4">
+        <TastingCalendar initialTastingDates={tastingDates} />
+      </div>
+
+      {/* Three-Column Bottom Row */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <WineDistributionChart data={wineDistribution} />
+        <TopLists data={topLists} />
+        <RatingDistribution data={ratingDistribution} />
       </div>
     </div>
   );
