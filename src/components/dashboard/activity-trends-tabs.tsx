@@ -147,24 +147,24 @@ export function ActivityTrendsTabs({ tastings, trendData }: ActivityTrendsTabsPr
                   <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
                     <stop
                       offset="5%"
-                      stopColor="hsl(var(--muted-foreground))"
-                      stopOpacity={0.4}
+                      stopColor="#a1a1aa"
+                      stopOpacity={0.5}
                     />
                     <stop
                       offset="95%"
-                      stopColor="hsl(var(--muted-foreground))"
-                      stopOpacity={0.05}
+                      stopColor="#a1a1aa"
+                      stopOpacity={0.1}
                     />
                   </linearGradient>
                 </defs>
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "#a1a1aa" }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "#a1a1aa" }}
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
@@ -183,7 +183,7 @@ export function ActivityTrendsTabs({ tastings, trendData }: ActivityTrendsTabsPr
                 <Area
                   type="monotone"
                   dataKey="count"
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="#a1a1aa"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorCount)"
