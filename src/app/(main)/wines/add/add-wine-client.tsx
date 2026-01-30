@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Loader2, ArrowLeft } from "lucide-react";
+import { Upload, Loader2, ArrowLeft, Table } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WineForm, type WineFormReferenceData } from "@/components/wines/wine-form";
 import { MultiWineTable } from "@/components/wines/multi-wine-table";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
+import { ColumnMapper } from "@/components/wines/column-mapper";
 import { uploadWineImage } from "@/actions/wines";
 import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
+import { parseSpreadsheet, type ParsedSpreadsheet } from "@/lib/spreadsheet-utils";
 import { matchExtractedWineToReferences, matchExtractedWinesToReferences } from "@/lib/reference-matcher";
 import type { ExtractedWineData, ExtractedWineWithId } from "@/lib/types";
 import { toast } from "sonner";
@@ -18,12 +20,54 @@ interface AddWineClientProps {
 }
 
 export function AddWineClient({ referenceData }: AddWineClientProps) {
-  const [step, setStep] = useState<"choose" | "scan" | "manual" | "multi">("choose");
+  const [step, setStep] = useState<"choose" | "scan" | "manual" | "multi" | "spreadsheet-mapping">("choose");
   const [scanning, setScanning] = useState(false);
   const [converting, setConverting] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedWineData | null>(null);
   const [extractedWines, setExtractedWines] = useState<ExtractedWineWithId[]>([]);
   const [imageUrl, setImageUrl] = useState<string | undefined>();
+  const [spreadsheetData, setSpreadsheetData] = useState<ParsedSpreadsheet | null>(null);
+
+  const handleSpreadsheetUpload = async (file: File) => {
+    try {
+      const parsed = await parseSpreadsheet(file);
+      setSpreadsheetData(parsed);
+      setStep("spreadsheet-mapping");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to parse file");
+    }
+  };
+
+  const handleMappingConfirm = (mapping: Record<string, string>) => {
+    if (!spreadsheetData) return;
+
+    const wines: ExtractedWineWithId[] = spreadsheetData.rows.map((row, index) => {
+      const wine: Record<string, unknown> = {
+        tempId: `import-${Date.now()}-${index}`,
+        position: `Row ${index + 2}`, // +2 for header row and 1-indexing
+      };
+
+      Object.entries(mapping).forEach(([header, field]) => {
+        const value = row[header];
+        if (value != null && field) {
+          if (field === "vintage" || field === "stock") {
+            wine[field] = typeof value === "number" ? value : parseInt(String(value), 10) || undefined;
+          } else {
+            wine[field] = String(value);
+          }
+        }
+      });
+
+      return wine as unknown as ExtractedWineWithId;
+    });
+
+    // Match to references
+    const matched = matchExtractedWinesToReferences(wines, referenceData);
+    setExtractedWines(matched);
+    setSpreadsheetData(null);
+    setStep("multi");
+    toast.success(`Imported ${wines.length} wines`);
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,7 +215,46 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <label htmlFor="spreadsheet-file" className="cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Table className="h-5 w-5" />
+                  Import Spreadsheet
+                </CardTitle>
+                <CardDescription>
+                  Upload CSV or Excel file
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <input
+                  id="spreadsheet-file"
+                  type="file"
+                  accept=".csv,.xls,.xlsx"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleSpreadsheetUpload(e.target.files[0])}
+                />
+                <Button variant="secondary" className="w-full" asChild>
+                  <span>Choose File</span>
+                </Button>
+              </CardContent>
+            </label>
+          </Card>
         </div>
+      </div>
+    );
+  }
+
+  if (step === "spreadsheet-mapping" && spreadsheetData) {
+    return (
+      <div className="container py-8 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-8">Import Spreadsheet</h1>
+        <ColumnMapper
+          headers={spreadsheetData.headers}
+          onConfirm={handleMappingConfirm}
+          onCancel={() => { setSpreadsheetData(null); setStep("choose"); }}
+        />
       </div>
     );
   }
