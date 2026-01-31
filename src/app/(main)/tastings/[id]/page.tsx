@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, MapPin, Calendar, Wine as WineIcon } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, Calendar, Wine as WineIcon, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,6 +101,22 @@ export default async function TastingDetailPage({ params }: TastingDetailPagePro
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Occasion</p>
                 <p>{tasting.occasion}</p>
+              </div>
+            )}
+
+            {tasting.friends && tasting.friends.length > 0 && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <Users className="h-4 w-4" />
+                  Tasted with
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {tasting.friends.map((friend) => (
+                    <Badge key={friend.id} variant="secondary">
+                      {friend.profile.username || friend.profile.email}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
 

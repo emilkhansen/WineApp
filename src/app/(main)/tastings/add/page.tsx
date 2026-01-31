@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { StarRating } from "@/components/tastings/star-rating";
 import { MultiTastingReview } from "@/components/tastings/multi-tasting-review";
+import { FriendSelector } from "@/components/tastings/friend-selector";
 import { createTasting } from "@/actions/tastings";
 import { findMatchingWine, uploadWineImage } from "@/actions/wines";
 import { convertImageToJpeg, isKnownImageFormat } from "@/lib/image-utils";
@@ -53,6 +54,7 @@ export default function AddTastingPage() {
   const [tastingDate, setTastingDate] = useState<Date>(new Date());
   const [location, setLocation] = useState("");
   const [occasion, setOccasion] = useState("");
+  const [friendIds, setFriendIds] = useState<string[]>([]);
 
   // Load wines when going to manual step
   useEffect(() => {
@@ -201,6 +203,7 @@ export default function AddTastingPage() {
       tasting_date: format(tastingDate, "yyyy-MM-dd"),
       location: location || undefined,
       occasion: occasion || undefined,
+      friend_ids: friendIds.length > 0 ? friendIds : undefined,
     });
 
     if (result.error) {
@@ -433,6 +436,12 @@ export default function AddTastingPage() {
                     rows={4}
                   />
                 </div>
+
+                {/* Friends */}
+                <FriendSelector
+                  selectedFriendIds={friendIds}
+                  onFriendsChange={setFriendIds}
+                />
 
                 <div className="flex gap-4 justify-end">
                   <Button

@@ -10,6 +10,7 @@ import type {
   TastingWithWineAndAuthor,
   CreateTastingFromScanInput,
   TastingScanSharedData,
+  TastingFriendWithProfile,
 } from "@/lib/types";
 import { getFriends } from "./friends";
 
@@ -25,7 +26,14 @@ export async function getTastings(): Promise<TastingWithWine[]> {
     .from("tastings")
     .select(`
       *,
-      wine:wines(*)
+      wine:wines(*),
+      friends:tasting_friends(
+        id,
+        tasting_id,
+        friend_id,
+        created_at,
+        profile:profiles(*)
+      )
     `)
     .eq("user_id", user.id)
     .order("tasting_date", { ascending: false });
@@ -35,7 +43,17 @@ export async function getTastings(): Promise<TastingWithWine[]> {
     return [];
   }
 
-  return data || [];
+  // Transform the friends data to match TastingFriendWithProfile type
+  return (data || []).map(tasting => ({
+    ...tasting,
+    friends: (tasting.friends || []).map((f: { id: string; tasting_id: string; friend_id: string; created_at: string; profile: unknown }) => ({
+      id: f.id,
+      tasting_id: f.tasting_id,
+      friend_id: f.friend_id,
+      created_at: f.created_at,
+      profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+    })) as TastingFriendWithProfile[],
+  }));
 }
 
 export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor[]> {
@@ -58,7 +76,14 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
     .from("tastings")
     .select(`
       *,
-      wine:wines(*)
+      wine:wines(*),
+      friends:tasting_friends(
+        id,
+        tasting_id,
+        friend_id,
+        created_at,
+        profile:profiles(*)
+      )
     `)
     .eq("user_id", user.id)
     .order("tasting_date", { ascending: false });
@@ -97,6 +122,13 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
   // Combine and add author info
   const myTastingsWithAuthor: TastingWithWineAndAuthor[] = (myTastings || []).map(t => ({
     ...t,
+    friends: (t.friends || []).map((f: { id: string; tasting_id: string; friend_id: string; created_at: string; profile: unknown }) => ({
+      id: f.id,
+      tasting_id: f.tasting_id,
+      friend_id: f.friend_id,
+      created_at: f.created_at,
+      profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+    })) as TastingFriendWithProfile[],
     author: {
       id: user.id,
       username: myProfile?.username || null,
@@ -159,14 +191,31 @@ export async function getTasting(id: string): Promise<{ tasting: TastingWithWine
     .from("tastings")
     .select(`
       *,
-      wine:wines(*)
+      wine:wines(*),
+      friends:tasting_friends(
+        id,
+        tasting_id,
+        friend_id,
+        created_at,
+        profile:profiles(*)
+      )
     `)
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
   if (ownTasting) {
-    return { tasting: ownTasting, isOwner: true };
+    const tastingWithFriends = {
+      ...ownTasting,
+      friends: (ownTasting.friends || []).map((f: { id: string; tasting_id: string; friend_id: string; created_at: string; profile: unknown }) => ({
+        id: f.id,
+        tasting_id: f.tasting_id,
+        friend_id: f.friend_id,
+        created_at: f.created_at,
+        profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+      })) as TastingFriendWithProfile[],
+    };
+    return { tasting: tastingWithFriends, isOwner: true };
   }
 
   // If not own tasting, check if it's a friend's tasting (RLS will handle access)
@@ -213,6 +262,23 @@ export async function createTasting(formData: TastingFormData) {
   if (error) {
     console.error("Error creating tasting:", error);
     return { error: error.message };
+  }
+
+  // Insert tasting friends if provided
+  if (formData.friend_ids && formData.friend_ids.length > 0) {
+    const friendInserts = formData.friend_ids.map(friend_id => ({
+      tasting_id: data.id,
+      friend_id,
+    }));
+
+    const { error: friendsError } = await supabase
+      .from("tasting_friends")
+      .insert(friendInserts);
+
+    if (friendsError) {
+      console.error("Error adding tasting friends:", friendsError);
+      // Don't fail the whole operation, just log the error
+    }
   }
 
   // Decrement wine stock
@@ -277,6 +343,32 @@ export async function updateTasting(id: string, formData: Partial<TastingFormDat
   if (error) {
     console.error("Error updating tasting:", error);
     return { error: error.message };
+  }
+
+  // Update tasting friends if provided
+  if (formData.friend_ids !== undefined) {
+    // Delete existing friends
+    await supabase
+      .from("tasting_friends")
+      .delete()
+      .eq("tasting_id", id);
+
+    // Insert new friends
+    if (formData.friend_ids.length > 0) {
+      const friendInserts = formData.friend_ids.map(friend_id => ({
+        tasting_id: id,
+        friend_id,
+      }));
+
+      const { error: friendsError } = await supabase
+        .from("tasting_friends")
+        .insert(friendInserts);
+
+      if (friendsError) {
+        console.error("Error updating tasting friends:", friendsError);
+        // Don't fail the whole operation, just log the error
+      }
+    }
   }
 
   revalidatePath("/tastings");
@@ -380,7 +472,7 @@ export async function createTastingsFromScan(
       }
 
       // Create the tasting
-      const { error: tastingError } = await supabase
+      const { data: createdTasting, error: tastingError } = await supabase
         .from("tastings")
         .insert({
           user_id: user.id,
@@ -390,11 +482,30 @@ export async function createTastingsFromScan(
           tasting_date: sharedData.tasting_date,
           location: sharedData.location || null,
           occasion: sharedData.occasion || null,
-        });
+        })
+        .select()
+        .single();
 
-      if (tastingError) {
+      if (tastingError || !createdTasting) {
         console.error("Error creating tasting:", tastingError);
-        return { success: false, error: tastingError.message };
+        return { success: false, error: tastingError?.message || "Failed to create tasting" };
+      }
+
+      // Add friends to the tasting if provided
+      if (sharedData.friend_ids && sharedData.friend_ids.length > 0) {
+        const friendInserts = sharedData.friend_ids.map(friend_id => ({
+          tasting_id: createdTasting.id,
+          friend_id,
+        }));
+
+        const { error: friendsError } = await supabase
+          .from("tasting_friends")
+          .insert(friendInserts);
+
+        if (friendsError) {
+          console.error("Error adding tasting friends:", friendsError);
+          // Don't fail the whole operation, just log the error
+        }
       }
     }
 

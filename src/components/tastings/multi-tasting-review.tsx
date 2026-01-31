@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import { ImagePreviewCard } from "@/components/wines/image-preview-card";
 import { StarRating } from "@/components/tastings/star-rating";
+import { FriendSelector } from "@/components/tastings/friend-selector";
 import { createTastingsFromScan } from "@/actions/tastings";
 import type { ScannedWineForTasting, WineFormData, Wine } from "@/lib/types";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ export function MultiTastingReview({
   const [tastingDate, setTastingDate] = useState<Date>(new Date());
   const [location, setLocation] = useState("");
   const [occasion, setOccasion] = useState("");
+  const [friendIds, setFriendIds] = useState<string[]>([]);
 
   const updateWineRating = (tempId: string, rating: number) => {
     setWines((prev) =>
@@ -118,6 +120,7 @@ export function MultiTastingReview({
           tasting_date: format(tastingDate, "yyyy-MM-dd"),
           location: location || undefined,
           occasion: occasion || undefined,
+          friend_ids: friendIds.length > 0 ? friendIds : undefined,
         },
         imageUrl
       );
@@ -212,6 +215,12 @@ export function MultiTastingReview({
                 />
               </div>
             </div>
+
+            {/* Friends */}
+            <FriendSelector
+              selectedFriendIds={friendIds}
+              onFriendsChange={setFriendIds}
+            />
           </CardContent>
         </Card>
 

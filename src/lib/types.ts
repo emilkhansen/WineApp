@@ -98,8 +98,20 @@ export interface Tasting {
   created_at: string;
 }
 
+export interface TastingFriend {
+  id: string;
+  tasting_id: string;
+  friend_id: string;
+  created_at: string;
+}
+
+export interface TastingFriendWithProfile extends TastingFriend {
+  profile: Profile;
+}
+
 export interface TastingWithWine extends Tasting {
   wine: Wine;
+  friends?: TastingFriendWithProfile[];
 }
 
 export interface TastingWithWineAndAuthor extends TastingWithWine {
@@ -132,6 +144,7 @@ export interface TastingFormData {
   tasting_date: string;
   location?: string;
   occasion?: string;
+  friend_ids?: string[];
 }
 
 export interface ExtractedWineData {
@@ -150,6 +163,7 @@ export interface ExtractedWineData {
 export interface ExtractedWineWithId extends ExtractedWineData {
   tempId: string;
   position?: string;
+  stock?: number;  // For multi-wine table editing
   originalValues?: Partial<ExtractedWineData>;  // Stores original AI-extracted values before matching
 }
 
@@ -198,6 +212,7 @@ export interface TastingScanSharedData {
   tasting_date: string;
   location?: string;
   occasion?: string;
+  friend_ids?: string[];
 }
 
 export interface CreateTastingFromScanInput {

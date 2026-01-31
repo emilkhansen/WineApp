@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SimpleCombobox } from "@/components/ui/simple-combobox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,7 +39,7 @@ export function MultiWineTable({
   imageUrl,
   referenceData,
 }: MultiWineTableProps) {
-  const { colors, regions, crus } = referenceData;
+  const { colors, regions, subregions, grapes, crus, vineyards } = referenceData;
   const router = useRouter();
   const [wines, setWines] = useState<ExtractedWineWithId[]>(initialWines);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -99,13 +106,14 @@ export function MultiWineTable({
         producer: w.producer,
         vintage: w.vintage,
         region: w.region,
+        subregion: w.subregion,
         grape: w.grape,
         appellation: w.appellation,
         vineyard: w.vineyard,
         cru: w.cru,
         color: w.color,
         size: w.size,
-        stock: 1,
+        stock: w.stock ?? 1,
       }));
 
       const result = await createWines(wineFormData, imageUrl);
@@ -143,32 +151,36 @@ export function MultiWineTable({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3">
         <div className="rounded-md border overflow-x-auto">
-          <Table>
+          <Table className="text-xs">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
+                <TableHead className="w-8 px-2">
                   <Checkbox
                     checked={allSelected}
                     onCheckedChange={handleSelectAll}
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead className="min-w-[80px]">Position</TableHead>
-                <TableHead className="min-w-[150px]">Producer</TableHead>
-                <TableHead className="w-24">Vintage</TableHead>
-                <TableHead className="min-w-[140px]">Region</TableHead>
-                <TableHead className="min-w-[160px]">Appellation</TableHead>
-                <TableHead className="min-w-[140px]">Cru</TableHead>
-                <TableHead className="w-28">Color</TableHead>
-                <TableHead className="w-16"></TableHead>
+                <TableHead className="min-w-[140px] px-1">Producer</TableHead>
+                <TableHead className="w-20 px-1">Vintage</TableHead>
+                <TableHead className="min-w-[100px] px-1">Region</TableHead>
+                <TableHead className="min-w-[120px] px-1">Subregion</TableHead>
+                <TableHead className="min-w-[140px] px-1">Appellation</TableHead>
+                <TableHead className="min-w-[120px] px-1">Vineyard</TableHead>
+                <TableHead className="min-w-[100px] px-1">Cru</TableHead>
+                <TableHead className="min-w-[100px] px-1">Grape</TableHead>
+                <TableHead className="w-20 px-1">Color</TableHead>
+                <TableHead className="w-20 px-1">Size</TableHead>
+                <TableHead className="w-14 px-1">Qty</TableHead>
+                <TableHead className="w-10 px-1"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {wines.map((wine) => (
                 <TableRow key={wine.tempId}>
-                  <TableCell>
+                  <TableCell className="px-2 py-1">
                     <Checkbox
                       checked={selectedIds.has(wine.tempId)}
                       onCheckedChange={(checked) =>
@@ -177,20 +189,17 @@ export function MultiWineTable({
                       aria-label={`Select ${wine.producer || "wine"}`}
                     />
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {wine.position}
-                  </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
                     <Input
                       value={wine.producer || ""}
                       onChange={(e) =>
                         handleFieldChange(wine.tempId, "producer", e.target.value)
                       }
                       placeholder="Producer"
-                      className="min-w-[130px]"
+                      className="h-8 text-xs min-w-[130px]"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
                     <Input
                       type="number"
                       value={wine.vintage || ""}
@@ -202,12 +211,12 @@ export function MultiWineTable({
                         )
                       }
                       placeholder="Year"
-                      className="w-20"
+                      className="h-8 text-xs w-[72px]"
                       min="1900"
                       max={new Date().getFullYear()}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
                     <SimpleCombobox
                       options={regions.map((region) => ({
                         value: region.name,
@@ -218,31 +227,51 @@ export function MultiWineTable({
                         handleFieldChange(wine.tempId, "region", value)
                       }
                       placeholder="Region"
-                      searchPlaceholder="Search regions..."
-                      className="min-w-[120px]"
+                      searchPlaceholder="Search..."
+                      className="min-w-[90px] [&_input]:h-8 [&_input]:text-xs"
                     />
-                    {wine.originalValues?.region && wine.originalValues.region !== wine.region && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.region}>
-                        AI: {wine.originalValues.region}
-                      </p>
-                    )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
+                    <SimpleCombobox
+                      options={subregions.map((subregion) => ({
+                        value: subregion.name,
+                        label: subregion.name,
+                      }))}
+                      value={wine.subregion || ""}
+                      onValueChange={(value) =>
+                        handleFieldChange(wine.tempId, "subregion", value)
+                      }
+                      placeholder="Subregion"
+                      searchPlaceholder="Search..."
+                      className="min-w-[110px] [&_input]:h-8 [&_input]:text-xs"
+                    />
+                  </TableCell>
+                  <TableCell className="px-1 py-1">
                     <Input
                       value={wine.appellation || ""}
                       onChange={(e) =>
                         handleFieldChange(wine.tempId, "appellation", e.target.value)
                       }
                       placeholder="Appellation"
-                      className="min-w-[130px]"
+                      className="h-8 text-xs min-w-[130px]"
                     />
-                    {wine.originalValues?.appellation && wine.originalValues.appellation !== wine.appellation && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.appellation}>
-                        AI: {wine.originalValues.appellation}
-                      </p>
-                    )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
+                    <SimpleCombobox
+                      options={vineyards.map((vineyard) => ({
+                        value: vineyard.name,
+                        label: vineyard.name,
+                      }))}
+                      value={wine.vineyard || ""}
+                      onValueChange={(value) =>
+                        handleFieldChange(wine.tempId, "vineyard", value)
+                      }
+                      placeholder="Vineyard"
+                      searchPlaceholder="Search..."
+                      className="min-w-[110px] [&_input]:h-8 [&_input]:text-xs"
+                    />
+                  </TableCell>
+                  <TableCell className="px-1 py-1">
                     <SimpleCombobox
                       options={crus.map((cru) => ({
                         value: cru.name,
@@ -253,16 +282,26 @@ export function MultiWineTable({
                         handleFieldChange(wine.tempId, "cru", value)
                       }
                       placeholder="Cru"
-                      searchPlaceholder="Search crus..."
-                      className="min-w-[120px]"
+                      searchPlaceholder="Search..."
+                      className="min-w-[90px] [&_input]:h-8 [&_input]:text-xs"
                     />
-                    {wine.originalValues?.cru && wine.originalValues.cru !== wine.cru && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.cru}>
-                        AI: {wine.originalValues.cru}
-                      </p>
-                    )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
+                    <SimpleCombobox
+                      options={grapes.map((grape) => ({
+                        value: grape.name,
+                        label: grape.name,
+                      }))}
+                      value={wine.grape || ""}
+                      onValueChange={(value) =>
+                        handleFieldChange(wine.tempId, "grape", value)
+                      }
+                      placeholder="Grape"
+                      searchPlaceholder="Search..."
+                      className="min-w-[90px] [&_input]:h-8 [&_input]:text-xs"
+                    />
+                  </TableCell>
+                  <TableCell className="px-1 py-1">
                     <SimpleCombobox
                       options={colors.map((color) => ({
                         value: color.name,
@@ -273,22 +312,52 @@ export function MultiWineTable({
                         handleFieldChange(wine.tempId, "color", value)
                       }
                       placeholder="Color"
-                      searchPlaceholder="Search colors..."
-                      className="w-24"
+                      searchPlaceholder="Search..."
+                      className="w-[75px] [&_input]:h-8 [&_input]:text-xs"
                     />
-                    {wine.originalValues?.color && wine.originalValues.color !== wine.color && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate" title={wine.originalValues.color}>
-                        AI: {wine.originalValues.color}
-                      </p>
-                    )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
+                    <Select
+                      value={wine.size || ""}
+                      onValueChange={(value) =>
+                        handleFieldChange(wine.tempId, "size", value)
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs w-[70px]">
+                        <SelectValue placeholder="Size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="375ml">375ml</SelectItem>
+                        <SelectItem value="750ml">750ml</SelectItem>
+                        <SelectItem value="1.5L">1.5L</SelectItem>
+                        <SelectItem value="3L">3L</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="px-1 py-1">
+                    <Input
+                      type="number"
+                      value={wine.stock ?? 1}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          wine.tempId,
+                          "stock",
+                          e.target.value ? parseInt(e.target.value) : 1
+                        )
+                      }
+                      placeholder="Qty"
+                      className="h-8 text-xs w-12"
+                      min="0"
+                    />
+                  </TableCell>
+                  <TableCell className="px-1 py-1">
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
                       onClick={() => handleDeleteOne(wine.tempId)}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </Button>
                   </TableCell>
                 </TableRow>

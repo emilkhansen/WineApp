@@ -18,6 +18,10 @@ function hasAuthor(tasting: Tasting | TastingWithWine | TastingWithWineAndAuthor
   return "author" in tasting;
 }
 
+function hasFriends(tasting: Tasting | TastingWithWine | TastingWithWineAndAuthor): tasting is TastingWithWine {
+  return "friends" in tasting && Array.isArray((tasting as TastingWithWine).friends);
+}
+
 const WINE_COLORS: Record<string, string> = {
   red: "#722F37",
   white: "#F5E6C8",
@@ -40,6 +44,7 @@ export function TastingListItem({ tasting, showWine = true }: TastingListItemPro
 
   const wine = isWithWine(tasting) ? tasting.wine : null;
   const wineColor = wine ? getWineColorHex(wine.color) : "#9CA3AF";
+  const friends = hasFriends(tasting) ? tasting.friends || [] : [];
 
   return (
     <Link href={`/tastings/${tasting.id}`} className="block">
@@ -89,10 +94,15 @@ export function TastingListItem({ tasting, showWine = true }: TastingListItemPro
 
             {/* Bottom row: Metadata */}
             <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground flex-wrap">
-              {authorName && (
+              {(authorName || friends.length > 0) && (
                 <span className="flex items-center gap-1">
                   <User className="h-3.5 w-3.5" />
-                  {authorName}
+                  <span>
+                    {authorName || "Me"}
+                    {friends.length > 0 && (
+                      <> and {friends.map(f => f.profile.username || f.profile.email).join(", ")}</>
+                    )}
+                  </span>
                 </span>
               )}
               <span className="flex items-center gap-1">

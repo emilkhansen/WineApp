@@ -10,7 +10,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
           <CardDescription>
-            Customize how WineApp looks on your device
+            Customize how Cork looks on your device
           </CardDescription>
         </CardHeader>
         <CardContent>

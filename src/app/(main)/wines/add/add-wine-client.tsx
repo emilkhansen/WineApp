@@ -277,7 +277,7 @@ export function AddWineClient({ referenceData }: AddWineClientProps) {
 
   if (step === "multi") {
     return (
-      <div className="container py-8 max-w-6xl">
+      <div className="py-8 px-4 max-w-[98vw] mx-auto">
         <h1 className="text-3xl font-bold mb-8">Add Multiple Wines</h1>
         <MultiWineTable
           wines={extractedWines}

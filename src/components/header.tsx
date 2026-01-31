@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Wine, Plus, Settings, LogOut, Menu, X } from "lucide-react";
+import { Plus, Settings, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -49,9 +50,15 @@ export function Header({ userEmail, pendingFriendRequests = 0, isAdmin = false }
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4 sm:px-6 lg:px-8">
         <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <Wine className="h-6 w-6" />
-            <span className="font-bold">WineApp</span>
+          <Link href="/" className="mr-4 flex items-center gap-0.5">
+            <Image
+              src="/corkicon-nobg.png"
+              alt="Cork"
+              width={40}
+              height={40}
+              className="h-10 w-10"
+            />
+            <span className="font-bold">Cork</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             {navigation.map((item) => (

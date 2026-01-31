@@ -133,7 +133,11 @@ export function SimpleCombobox({
     >
       <ComboboxInput
         placeholder={displayPlaceholder}
-        className={cn("w-full", className)}
+        className={cn(
+          "w-full",
+          value && "[&_input::placeholder]:text-foreground",
+          className
+        )}
         showClear={!!value}
       />
       <ComboboxContent>

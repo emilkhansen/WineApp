@@ -1,0 +1,31 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(100, 100) rotate(25) translate(-100, -100)">
+    <!-- Cork body outline -->
+    <rect x="75" y="60" width="50" height="100" rx="3" fill="none" stroke="#93293B" stroke-width="3.5"/>
+    
+    <!-- Cork top rim -->
+    <ellipse cx="100" cy="60" rx="25" ry="7" fill="none" stroke="#93293B" stroke-width="3.5"/>
+    
+    <!-- Cork bottom -->
+    <ellipse cx="100" cy="160" rx="25" ry="7" fill="none" stroke="#93293B" stroke-width="3.5"/>
+    
+    <!-- Cork texture lines - curved to follow cylinder -->
+    <path d="M 80,80 Q 100,82 120,80" stroke="#93293B" stroke-width="3" opacity="0.6" fill="none"/>
+    <path d="M 80,100 Q 100,102 120,100" stroke="#93293B" stroke-width="3" opacity="0.6" fill="none"/>
+    <path d="M 80,120 Q 100,122 120,120" stroke="#93293B" stroke-width="3" opacity="0.6" fill="none"/>
+    <path d="M 80,140 Q 100,142 120,140" stroke="#93293B" stroke-width="3" opacity="0.6" fill="none"/>
+    
+    <!-- French château/grape motif -->
+    <g transform="translate(100, 110)">
+      <!-- Simple grape bunch -->
+      <circle cx="0" cy="-8" r="3" fill="#93293B" opacity="0.7"/>
+      <circle cx="-3.5" cy="-4" r="3" fill="#93293B" opacity="0.7"/>
+      <circle cx="3.5" cy="-4" r="3" fill="#93293B" opacity="0.7"/>
+      <circle cx="-3.5" cy="1" r="3" fill="#93293B" opacity="0.7"/>
+      <circle cx="3.5" cy="1" r="3" fill="#93293B" opacity="0.7"/>
+      <circle cx="0" cy="5" r="3" fill="#93293B" opacity="0.7"/>
+      <!-- Grape leaf -->
+      <path d="M 0,-12 Q -4,-14 -6,-11 Q -5,-8 0,-10 Q 5,-8 6,-11 Q 4,-14 0,-12 Z" fill="#93293B" opacity="0.5"/>
+    </g>
+  </g>
+</svg>

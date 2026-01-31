@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { StarRating } from "@/components/tastings/star-rating";
+import { FriendSelector } from "@/components/tastings/friend-selector";
 import { updateTasting } from "@/actions/tastings";
 import { createClient } from "@/lib/supabase/client";
 import type { TastingWithWine } from "@/lib/types";
@@ -35,13 +36,24 @@ export default function EditTastingPage() {
   const [tastingDate, setTastingDate] = useState<Date>(new Date());
   const [location, setLocation] = useState("");
   const [occasion, setOccasion] = useState("");
+  const [friendIds, setFriendIds] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadTasting() {
       const supabase = createClient();
       const { data } = await supabase
         .from("tastings")
-        .select(`*, wine:wines(*)`)
+        .select(`
+          *,
+          wine:wines(*),
+          friends:tasting_friends(
+            id,
+            tasting_id,
+            friend_id,
+            created_at,
+            profile:profiles(*)
+          )
+        `)
         .eq("id", id)
         .single();
 
@@ -52,6 +64,10 @@ export default function EditTastingPage() {
         setTastingDate(new Date(data.tasting_date));
         setLocation(data.location || "");
         setOccasion(data.occasion || "");
+        // Initialize friends from existing tasting data
+        if (data.friends && Array.isArray(data.friends)) {
+          setFriendIds(data.friends.map((f: { friend_id: string }) => f.friend_id));
+        }
       }
       setLoadingTasting(false);
     }
@@ -75,6 +91,7 @@ export default function EditTastingPage() {
       tasting_date: format(tastingDate, "yyyy-MM-dd"),
       location: location || undefined,
       occasion: occasion || undefined,
+      friend_ids: friendIds,
     });
 
     if (result.error) {
@@ -192,6 +209,12 @@ export default function EditTastingPage() {
                 rows={4}
               />
             </div>
+
+            {/* Friends */}
+            <FriendSelector
+              selectedFriendIds={friendIds}
+              onFriendsChange={setFriendIds}
+            />
 
             <div className="flex gap-4 justify-end">
               <Button

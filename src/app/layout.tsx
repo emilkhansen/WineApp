@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WineApp - Wine Tasting Journal",
+  title: "Cork - Wine Tasting Journal",
   description: "Track your wine collection and tasting notes",
 };
 
