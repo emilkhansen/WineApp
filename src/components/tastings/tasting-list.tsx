@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Plus, Wine as WineIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TastingListItem } from "@/components/tastings/tasting-list-item";
@@ -87,10 +88,16 @@ export function TastingList({ tastings }: TastingListProps) {
   if (tastings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <WineIcon className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">No tastings yet</h2>
+        <Image
+          src="/swrlingwine-nobg.png"
+          alt="Wine glass"
+          width={120}
+          height={120}
+          className="mb-4 opacity-80"
+        />
+        <h2 className="text-xl font-semibold mb-2">Your wine journal awaits</h2>
         <p className="text-muted-foreground mb-4">
-          Start recording your wine experiences.
+          Capture tasting notes, track your favorites, and build your collection.
         </p>
         <Link href="/tastings/add">
           <Button>

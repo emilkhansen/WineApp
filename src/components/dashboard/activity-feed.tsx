@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import { Star, ArrowRight, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +29,18 @@ export function ActivityFeed({ tastings }: ActivityFeedProps) {
       </CardHeader>
       <CardContent>
         {tastings.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No tastings recorded yet. Start by adding a wine and recording your first tasting!
-          </p>
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <Image
+              src="/swrlingwine-nobg.png"
+              alt="Wine glass"
+              width={80}
+              height={80}
+              className="mb-3 opacity-80"
+            />
+            <p className="text-sm text-muted-foreground">
+              Your wine journey starts here
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
             {tastings.map((tasting) => {

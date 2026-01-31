@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
-import { Star, ArrowRight, TrendingUp, ChevronRight } from "lucide-react";
+import { Star, ArrowRight, TrendingUp, ChevronRight, Plus } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -24,6 +25,10 @@ interface ActivityTrendsTabsProps {
 
 function hasAuthor(tasting: TastingWithWine | TastingWithWineAndAuthor): tasting is TastingWithWineAndAuthor {
   return "author" in tasting;
+}
+
+function hasFriends(tasting: TastingWithWine | TastingWithWineAndAuthor): tasting is TastingWithWine {
+  return "friends" in tasting && Array.isArray((tasting as TastingWithWine).friends);
 }
 
 const WINE_COLORS: Record<string, string> = {
@@ -79,15 +84,35 @@ export function ActivityTrendsTabs({ tastings, trendData }: ActivityTrendsTabsPr
       <CardContent className="flex-1 overflow-hidden pt-0 px-3">
         {activeTab === "activity" ? (
           tastings.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No tastings recorded yet.
-            </p>
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Image
+                src="/swrlingwine-nobg.png"
+                alt="Wine glass"
+                width={80}
+                height={80}
+                className="mb-2 opacity-80"
+              />
+              <p className="text-sm text-muted-foreground mb-3">
+                Your wine journey starts here
+              </p>
+              <Link href="/tastings/add">
+                <Button size="sm">
+                  <Plus className="mr-1 h-3 w-3" />
+                  Record a Tasting
+                </Button>
+              </Link>
+            </div>
           ) : (
             <div className="space-y-1 overflow-y-auto h-full">
               {tastings.map((tasting) => {
-                const authorName = hasAuthor(tasting)
+                const friends = hasFriends(tasting) ? tasting.friends || [] : [];
+                const authorBase = hasAuthor(tasting)
                   ? (tasting.author.isMe ? "Me" : (tasting.author.username || "Friend"))
-                  : null;
+                  : (friends.length > 0 ? "Me" : null);
+                const friendNames = friends.map(f => f.profile.username || f.profile.email).join(", ");
+                const authorDisplay = authorBase && friends.length > 0
+                  ? `${authorBase} and ${friendNames}`
+                  : authorBase;
                 const wineColor = getWineColorHex(tasting.wine.color);
 
                 return (
@@ -113,7 +138,7 @@ export function ActivityTrendsTabs({ tastings, trendData }: ActivityTrendsTabsPr
                         <div className="flex items-center justify-between gap-2 mt-0.5">
                           <span className="text-xs text-muted-foreground truncate">
                             {[
-                              authorName,
+                              authorDisplay,
                               tasting.wine.region,
                               tasting.wine.vintage,
                             ].filter(Boolean).join(" · ")}
@@ -134,8 +159,17 @@ export function ActivityTrendsTabs({ tastings, trendData }: ActivityTrendsTabsPr
           )
         ) : (
           isEmpty ? (
-            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-              No tasting data yet
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <Image
+                src="/swrlingwine-nobg.png"
+                alt="Wine glass"
+                width={80}
+                height={80}
+                className="mb-2 opacity-80"
+              />
+              <p className="text-sm text-muted-foreground">
+                Your trends will appear here
+              </p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">

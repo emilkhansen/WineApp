@@ -1,5 +1,5 @@
 {
-  "name": "wineapp",
+  "name": "cork",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -31,7 +31,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
-    "heic2any": "^0.0.4",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.563.0",
     "next": "^15.5.10",
@@ -41,6 +40,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "recharts": "^3.7.0",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "xlsx": "^0.18.5",
