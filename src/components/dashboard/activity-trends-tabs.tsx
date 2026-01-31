@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { Star, ArrowRight, TrendingUp, ChevronRight, Plus } from "lucide-react";
 import {
   AreaChart,
@@ -144,7 +144,7 @@ export function ActivityTrendsTabs({ tastings, trendData }: ActivityTrendsTabsPr
                             ].filter(Boolean).join(" · ")}
                           </span>
                           <span className="text-xs text-muted-foreground shrink-0">
-                            {format(new Date(tasting.tasting_date), "MMM d")}
+                            {formatDistanceToNow(new Date(tasting.created_at), { addSuffix: true })}
                           </span>
                         </div>
                       </div>

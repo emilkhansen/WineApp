@@ -107,6 +107,7 @@ export interface TastingFriend {
 
 export interface TastingFriendWithProfile extends TastingFriend {
   profile: Profile;
+  isMe?: boolean;
 }
 
 export interface TastingWithWine extends Tasting {

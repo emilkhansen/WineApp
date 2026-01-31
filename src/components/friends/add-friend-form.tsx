@@ -80,6 +80,7 @@ export function AddFriendForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent bubbling to parent form
 
     // Add any remaining input as email
     const allEmails = [...emails];

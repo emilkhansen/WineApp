@@ -36,7 +36,7 @@ export async function getTastings(): Promise<TastingWithWine[]> {
       )
     `)
     .eq("user_id", user.id)
-    .order("tasting_date", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching tastings:", error);
@@ -52,6 +52,7 @@ export async function getTastings(): Promise<TastingWithWine[]> {
       friend_id: f.friend_id,
       created_at: f.created_at,
       profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+      isMe: f.friend_id === user.id,
     })) as TastingFriendWithProfile[],
   }));
 }
@@ -86,7 +87,7 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
       )
     `)
     .eq("user_id", user.id)
-    .order("tasting_date", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (myError) {
     console.error("Error fetching my tastings:", myError);
@@ -97,22 +98,67 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
   const friends = await getFriends();
   const friendIds = friends.map(f => f.profile.id);
 
-  // Get friends' tastings
+  // Get friends' tastings (tastings owned by friends)
   let friendTastings: TastingWithWine[] = [];
   if (friendIds.length > 0) {
     const { data, error } = await supabase
       .from("tastings")
       .select(`
         *,
-        wine:wines(*)
+        wine:wines(*),
+        friends:tasting_friends(
+          id,
+          tasting_id,
+          friend_id,
+          created_at,
+          profile:profiles(*)
+        )
       `)
       .in("user_id", friendIds)
-      .order("tasting_date", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching friend tastings:", error);
     } else {
       friendTastings = (data || []).filter(t => t.wine !== null) as TastingWithWine[];
+    }
+  }
+
+  // Get tastings where I'm a participant (invited by a friend)
+  let participantTastings: TastingWithWine[] = [];
+  if (friendIds.length > 0) {
+    // First get tasting IDs where I'm a participant
+    const { data: participantData } = await supabase
+      .from("tasting_friends")
+      .select("tasting_id")
+      .eq("friend_id", user.id);
+
+    if (participantData && participantData.length > 0) {
+      const participantTastingIds = participantData.map(p => p.tasting_id);
+
+      // Get those tastings (only if owned by a friend)
+      const { data, error } = await supabase
+        .from("tastings")
+        .select(`
+          *,
+          wine:wines(*),
+          friends:tasting_friends(
+            id,
+            tasting_id,
+            friend_id,
+            created_at,
+            profile:profiles(*)
+          )
+        `)
+        .in("id", participantTastingIds)
+        .in("user_id", friendIds) // Only show if owner is a friend
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching participant tastings:", error);
+      } else {
+        participantTastings = (data || []).filter(t => t.wine !== null) as TastingWithWine[];
+      }
     }
   }
 
@@ -128,6 +174,7 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
       friend_id: f.friend_id,
       created_at: f.created_at,
       profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+      isMe: f.friend_id === user.id,
     })) as TastingFriendWithProfile[],
     author: {
       id: user.id,
@@ -140,6 +187,14 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
     const friendProfile = friendProfileMap.get(t.user_id);
     return {
       ...t,
+      friends: ((t as unknown as { friends?: Array<{ id: string; tasting_id: string; friend_id: string; created_at: string; profile: unknown }> }).friends || []).map(f => ({
+        id: f.id,
+        tasting_id: f.tasting_id,
+        friend_id: f.friend_id,
+        created_at: f.created_at,
+        profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+        isMe: f.friend_id === user.id,
+      })) as TastingFriendWithProfile[],
       author: {
         id: t.user_id,
         username: friendProfile?.username || null,
@@ -148,9 +203,46 @@ export async function getTastingsWithFriends(): Promise<TastingWithWineAndAuthor
     };
   });
 
-  // Combine and sort by date
-  const allTastings = [...myTastingsWithAuthor, ...friendTastingsWithAuthor];
-  allTastings.sort((a, b) => new Date(b.tasting_date).getTime() - new Date(a.tasting_date).getTime());
+  // Add participant tastings (tastings I was invited to by friends)
+  const participantTastingsWithAuthor: TastingWithWineAndAuthor[] = participantTastings.map(t => {
+    const friendProfile = friendProfileMap.get(t.user_id);
+    return {
+      ...t,
+      friends: ((t as unknown as { friends?: Array<{ id: string; tasting_id: string; friend_id: string; created_at: string; profile: unknown }> }).friends || []).map(f => ({
+        id: f.id,
+        tasting_id: f.tasting_id,
+        friend_id: f.friend_id,
+        created_at: f.created_at,
+        profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+        isMe: f.friend_id === user.id,
+      })) as TastingFriendWithProfile[],
+      author: {
+        id: t.user_id,
+        username: friendProfile?.username || null,
+        isMe: false,
+      },
+    };
+  });
+
+  // Combine and deduplicate (a tasting might appear in both friendTastings and participantTastings)
+  const tastingMap = new Map<string, TastingWithWineAndAuthor>();
+  for (const t of myTastingsWithAuthor) {
+    tastingMap.set(t.id, t);
+  }
+  for (const t of friendTastingsWithAuthor) {
+    if (!tastingMap.has(t.id)) {
+      tastingMap.set(t.id, t);
+    }
+  }
+  for (const t of participantTastingsWithAuthor) {
+    if (!tastingMap.has(t.id)) {
+      tastingMap.set(t.id, t);
+    }
+  }
+
+  // Sort by date
+  const allTastings = Array.from(tastingMap.values());
+  allTastings.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return allTastings;
 }
@@ -168,7 +260,7 @@ export async function getTastingsForWine(wineId: string): Promise<Tasting[]> {
     .select("*")
     .eq("wine_id", wineId)
     .eq("user_id", user.id)
-    .order("tasting_date", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching tastings for wine:", error);
@@ -213,6 +305,7 @@ export async function getTasting(id: string): Promise<{ tasting: TastingWithWine
         friend_id: f.friend_id,
         created_at: f.created_at,
         profile: Array.isArray(f.profile) ? f.profile[0] : f.profile,
+        isMe: f.friend_id === user.id,
       })) as TastingFriendWithProfile[],
     };
     return { tasting: tastingWithFriends, isOwner: true };
@@ -237,12 +330,16 @@ export async function getTasting(id: string): Promise<{ tasting: TastingWithWine
 }
 
 export async function createTasting(formData: TastingFormData) {
+  console.log("[createTasting] Called with formData:", JSON.stringify(formData, null, 2));
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return { error: "Not authenticated" };
   }
+
+  console.log("[createTasting] Authenticated user:", user.id);
 
   // Create the tasting
   const { data, error } = await supabase

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { Star, MapPin, Calendar, User, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { Tasting, TastingWithWine, TastingWithWineAndAuthor } from "@/lib/types";
@@ -98,16 +98,26 @@ export function TastingListItem({ tasting, showWine = true }: TastingListItemPro
                 <span className="flex items-center gap-1">
                   <User className="h-3.5 w-3.5" />
                   <span>
-                    {authorName || "Me"}
-                    {friends.length > 0 && (
-                      <> and {friends.map(f => f.profile.username || f.profile.email).join(", ")}</>
-                    )}
+                    {(() => {
+                      const iAmParticipant = friends.some(f => f.isMe);
+                      const otherFriends = friends.filter(f => !f.isMe).map(f => f.profile.username || f.profile.email);
+
+                      if (iAmParticipant) {
+                        // I'm a participant, show "Me and [author] and [others]"
+                        const others = [authorName, ...otherFriends].filter(Boolean);
+                        return others.length > 0 ? `Me and ${others.join(", ")}` : "Me";
+                      } else {
+                        // I'm the author or just viewing
+                        const others = otherFriends;
+                        return others.length > 0 ? `${authorName || "Me"} and ${others.join(", ")}` : (authorName || "Me");
+                      }
+                    })()}
                   </span>
                 </span>
               )}
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
-                {format(new Date(tasting.tasting_date), "MMMM d, yyyy")}
+                {formatDistanceToNow(new Date(tasting.created_at), { addSuffix: true })}
               </span>
               {tasting.location && (
                 <span className="flex items-center gap-1 truncate">

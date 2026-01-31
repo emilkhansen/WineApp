@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { Star, ArrowRight, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ export function ActivityFeed({ tastings }: ActivityFeedProps) {
                           {tasting.rating}
                         </span>
                         <span>•</span>
-                        <span>{format(new Date(tasting.tasting_date), "MMM d")}</span>
+                        <span>{formatDistanceToNow(new Date(tasting.created_at), { addSuffix: true })}</span>
                         {tasting.location && (
                           <>
                             <span>•</span>

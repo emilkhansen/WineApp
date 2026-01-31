@@ -38,21 +38,17 @@ CREATE POLICY "Users can delete their own invites"
   ON tasting_invites FOR DELETE
   USING (invited_by = auth.uid());
 
--- Function to claim pending invites when a user signs up or logs in
+-- Function to claim pending invites when a user signs up
 CREATE OR REPLACE FUNCTION claim_tasting_invites()
 RETURNS TRIGGER AS $$
 DECLARE
-  user_email TEXT;
   invite_record RECORD;
 BEGIN
-  -- Get the user's email
-  SELECT email INTO user_email FROM auth.users WHERE id = NEW.id;
-
-  -- Find and claim all pending invites for this email
+  -- Find and claim all pending invites for this email (using NEW.email from profiles)
   FOR invite_record IN
     SELECT ti.id, ti.tasting_id
     FROM tasting_invites ti
-    WHERE ti.email = user_email AND ti.claimed_at IS NULL
+    WHERE ti.email = NEW.email AND ti.claimed_at IS NULL
   LOOP
     -- Mark invite as claimed
     UPDATE tasting_invites

@@ -23,24 +23,14 @@ CREATE POLICY "View friends on own tastings" ON tasting_friends
     )
   );
 
--- Users can add friends to their own tastings (only accepted friends)
+-- Users can add anyone to their own tastings
+-- (visibility is controlled by friendship status in the app queries)
 CREATE POLICY "Add friends to own tastings" ON tasting_friends
   FOR INSERT WITH CHECK (
-    -- Must be the tasting owner
     EXISTS (
       SELECT 1 FROM tastings
       WHERE tastings.id = tasting_friends.tasting_id
       AND tastings.user_id = auth.uid()
-    )
-    AND
-    -- Must be an accepted friend
-    EXISTS (
-      SELECT 1 FROM friendships
-      WHERE status = 'accepted'
-      AND (
-        (user_id = auth.uid() AND friend_id = tasting_friends.friend_id) OR
-        (friend_id = auth.uid() AND user_id = tasting_friends.friend_id)
-      )
     )
   );
 
