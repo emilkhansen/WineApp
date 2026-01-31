@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Camera, Wine, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, Wine, Loader2, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,13 @@ import { CalendarIcon } from "lucide-react";
 
 type Step = "choose" | "scanning" | "review" | "manual";
 
+interface WineEntry {
+  id: string;
+  wineId: string;
+  rating: number;
+  notes: string;
+}
+
 export default function AddTastingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,13 +55,30 @@ export default function AddTastingPage() {
 
   // Manual form state
   const [loading, setLoading] = useState(false);
-  const [wineId, setWineId] = useState(preselectedWineId || "");
-  const [rating, setRating] = useState(0);
-  const [notes, setNotes] = useState("");
+  const [wineEntries, setWineEntries] = useState<WineEntry[]>([
+    { id: crypto.randomUUID(), wineId: preselectedWineId || "", rating: 0, notes: "" }
+  ]);
   const [tastingDate, setTastingDate] = useState<Date>(new Date());
   const [location, setLocation] = useState("");
   const [occasion, setOccasion] = useState("");
   const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [pendingInviteEmails, setPendingInviteEmails] = useState<string[]>([]);
+
+  const addWineEntry = () => {
+    setWineEntries(prev => [...prev, { id: crypto.randomUUID(), wineId: "", rating: 0, notes: "" }]);
+  };
+
+  const removeWineEntry = (id: string) => {
+    if (wineEntries.length > 1) {
+      setWineEntries(prev => prev.filter(entry => entry.id !== id));
+    }
+  };
+
+  const updateWineEntry = (id: string, field: keyof WineEntry, value: string | number) => {
+    setWineEntries(prev => prev.map(entry =>
+      entry.id === id ? { ...entry, [field]: value } : entry
+    ));
+  };
 
   // Load wines when going to manual step
   useEffect(() => {
@@ -184,34 +208,43 @@ export default function AddTastingPage() {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!wineId) {
-      toast.error("Please select a wine");
-      return;
-    }
-
-    if (rating === 0) {
-      toast.error("Please provide a rating");
+    const invalidEntries = wineEntries.filter(entry => !entry.wineId || entry.rating === 0);
+    if (invalidEntries.length > 0) {
+      toast.error("Please select a wine and provide a rating for all entries");
       return;
     }
 
     setLoading(true);
 
-    const result = await createTasting({
-      wine_id: wineId,
-      rating,
-      notes: notes || undefined,
-      tasting_date: format(tastingDate, "yyyy-MM-dd"),
-      location: location || undefined,
-      occasion: occasion || undefined,
-      friend_ids: friendIds.length > 0 ? friendIds : undefined,
-    });
+    try {
+      // Create all tastings with pending invites
+      const results = await Promise.all(
+        wineEntries.map(entry =>
+          createTasting({
+            wine_id: entry.wineId,
+            rating: entry.rating,
+            notes: entry.notes || undefined,
+            tasting_date: format(tastingDate, "yyyy-MM-dd"),
+            location: location || undefined,
+            occasion: occasion || undefined,
+            friend_ids: friendIds.length > 0 ? friendIds : undefined,
+            pending_invite_emails: pendingInviteEmails.length > 0 ? pendingInviteEmails : undefined,
+          })
+        )
+      );
 
-    if (result.error) {
-      toast.error(result.error);
-      setLoading(false);
-    } else {
-      toast.success("Tasting recorded successfully");
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        toast.error(errors[0].error);
+        setLoading(false);
+        return;
+      }
+
+      toast.success(`${wineEntries.length} tasting${wineEntries.length > 1 ? "s" : ""} recorded`);
       router.push("/tastings");
+    } catch {
+      toast.error("Failed to save tastings");
+      setLoading(false);
     }
   };
 
@@ -344,38 +377,90 @@ export default function AddTastingPage() {
           )}
 
           <form onSubmit={handleManualSubmit}>
+            {/* Wine entries */}
+            <div className="space-y-4 mb-6">
+              {wineEntries.map((entry, index) => (
+                <Card key={entry.id}>
+                  <CardContent className="pt-4 space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <Label>Wine {wineEntries.length > 1 ? `#${index + 1}` : ""} *</Label>
+                        <SimpleCombobox
+                          options={wines.map((wine) => ({
+                            value: wine.id,
+                            label: getWineDisplayName(wine),
+                          }))}
+                          value={entry.wineId}
+                          onValueChange={(value) => updateWineEntry(entry.id, "wineId", value)}
+                          placeholder={loadingWines ? "Loading wines..." : "Select a wine"}
+                          searchPlaceholder="Search wines..."
+                          disabled={loadingWines}
+                        />
+                      </div>
+                      {wineEntries.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 mt-6"
+                          onClick={() => removeWineEntry(entry.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-[auto_1fr] items-start">
+                      <div className="space-y-2">
+                        <Label>Rating *</Label>
+                        <StarRating
+                          rating={entry.rating}
+                          onRatingChange={(r) => updateWineEntry(entry.id, "rating", r)}
+                          size="md"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Notes</Label>
+                        <Textarea
+                          value={entry.notes}
+                          onChange={(e) => updateWineEntry(entry.id, "notes", e.target.value)}
+                          placeholder="Your impressions..."
+                          rows={2}
+                          className="resize-none"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {wines.length === 0 && !loadingWines && (
+                <p className="text-sm text-muted-foreground">
+                  No wines in your collection.{" "}
+                  <Link href="/wines/add" className="text-primary hover:underline">
+                    Add a wine first
+                  </Link>
+                </p>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addWineEntry}
+                className="w-full"
+                disabled={loadingWines || wines.length === 0}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Wine
+              </Button>
+            </div>
+
+            {/* Shared tasting details */}
             <Card>
-              <CardContent className="pt-6 space-y-6">
-                {/* Wine Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="wine">Wine *</Label>
-                  <SimpleCombobox
-                    options={wines.map((wine) => ({
-                      value: wine.id,
-                      label: getWineDisplayName(wine),
-                    }))}
-                    value={wineId}
-                    onValueChange={setWineId}
-                    placeholder={loadingWines ? "Loading wines..." : "Select a wine"}
-                    searchPlaceholder="Search wines..."
-                    disabled={loadingWines}
-                  />
-                  {wines.length === 0 && !loadingWines && (
-                    <p className="text-sm text-muted-foreground">
-                      No wines in your collection.{" "}
-                      <Link href="/wines/add" className="text-primary hover:underline">
-                        Add a wine first
-                      </Link>
-                    </p>
-                  )}
-                </div>
-
-                {/* Rating */}
-                <div className="space-y-2">
-                  <Label>Rating *</Label>
-                  <StarRating rating={rating} onRatingChange={setRating} size="lg" />
-                </div>
-
+              <CardHeader>
+                <CardTitle className="text-lg">Tasting Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 {/* Date */}
                 <div className="space-y-2">
                   <Label>Date *</Label>
@@ -425,22 +510,12 @@ export default function AddTastingPage() {
                   </div>
                 </div>
 
-                {/* Notes */}
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Tasting Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Your impressions, aromas, flavors..."
-                    rows={4}
-                  />
-                </div>
-
                 {/* Friends */}
                 <FriendSelector
                   selectedFriendIds={friendIds}
                   onFriendsChange={setFriendIds}
+                  pendingInviteEmails={pendingInviteEmails}
+                  onPendingInviteEmailsChange={setPendingInviteEmails}
                 />
 
                 <div className="flex gap-4 justify-end">
@@ -452,8 +527,11 @@ export default function AddTastingPage() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={loading || !wineId || rating === 0}>
-                    {loading ? "Saving..." : "Save Tasting"}
+                  <Button
+                    type="submit"
+                    disabled={loading || wineEntries.some(e => !e.wineId || e.rating === 0)}
+                  >
+                    {loading ? "Saving..." : `Save ${wineEntries.length} Tasting${wineEntries.length > 1 ? "s" : ""}`}
                   </Button>
                 </div>
               </CardContent>

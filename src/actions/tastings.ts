@@ -281,6 +281,101 @@ export async function createTasting(formData: TastingFormData) {
     }
   }
 
+  // Handle pending invite emails - check if they're existing users or not
+  if (formData.pending_invite_emails && formData.pending_invite_emails.length > 0) {
+    const emails = formData.pending_invite_emails.map(e => e.toLowerCase());
+    console.log("[createTasting] Processing pending invite emails:", emails);
+
+    // Look up which emails belong to existing users
+    const { data: existingProfiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .in("email", emails);
+
+    console.log("[createTasting] Profile lookup result:", { existingProfiles, profilesError });
+
+    const existingEmailMap = new Map(
+      (existingProfiles || []).map(p => [p.email.toLowerCase(), p.id])
+    );
+
+    const existingUserIds: string[] = [];
+    const nonExistentEmails: string[] = [];
+
+    for (const email of emails) {
+      const userId = existingEmailMap.get(email);
+      if (userId && userId !== user.id) {
+        existingUserIds.push(userId);
+      } else if (!userId) {
+        nonExistentEmails.push(email);
+      }
+    }
+
+    // Add existing users directly to tasting_friends and send friend requests
+    if (existingUserIds.length > 0) {
+      // Add to tasting_friends
+      const friendInserts = existingUserIds.map(friend_id => ({
+        tasting_id: data.id,
+        friend_id,
+      }));
+
+      const { error: friendsError } = await supabase
+        .from("tasting_friends")
+        .insert(friendInserts);
+
+      if (friendsError) {
+        console.error("Error adding existing users to tasting:", friendsError);
+      }
+
+      // Send friend requests for users we're not already friends with
+      console.log("[createTasting] Sending friend requests to:", existingUserIds);
+      for (const friendId of existingUserIds) {
+        // Check if friendship already exists
+        const { data: existingFriendship, error: friendshipCheckError } = await supabase
+          .from("friendships")
+          .select("id")
+          .or(`and(user_id.eq.${user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`)
+          .maybeSingle();
+
+        console.log("[createTasting] Friendship check for", friendId, ":", { existingFriendship, friendshipCheckError });
+
+        if (!existingFriendship) {
+          // Create pending friend request
+          const { data: newFriendship, error: friendshipError } = await supabase
+            .from("friendships")
+            .insert({
+              user_id: user.id,
+              friend_id: friendId,
+              status: "pending",
+            })
+            .select();
+
+          console.log("[createTasting] Friend request result:", { newFriendship, friendshipError });
+
+          if (friendshipError) {
+            console.error("Error creating friend request:", friendshipError);
+          }
+        }
+      }
+    }
+
+    // Store non-existent emails in tasting_invites for when they sign up
+    if (nonExistentEmails.length > 0) {
+      const inviteInserts = nonExistentEmails.map(email => ({
+        tasting_id: data.id,
+        email,
+        invited_by: user.id,
+      }));
+
+      const { error: invitesError } = await supabase
+        .from("tasting_invites")
+        .insert(inviteInserts);
+
+      if (invitesError) {
+        console.error("Error creating tasting invites:", invitesError);
+      }
+    }
+  }
+
   // Decrement wine stock
   const { error: stockError } = await supabase.rpc("decrement_stock", {
     wine_id: formData.wine_id,
@@ -505,6 +600,91 @@ export async function createTastingsFromScan(
         if (friendsError) {
           console.error("Error adding tasting friends:", friendsError);
           // Don't fail the whole operation, just log the error
+        }
+      }
+
+      // Handle pending invite emails - check if they're existing users or not
+      if (sharedData.pending_invite_emails && sharedData.pending_invite_emails.length > 0) {
+        const emails = sharedData.pending_invite_emails.map(e => e.toLowerCase());
+
+        // Look up which emails belong to existing users
+        const { data: existingProfiles } = await supabase
+          .from("profiles")
+          .select("id, email")
+          .in("email", emails);
+
+        const existingEmailMap = new Map(
+          (existingProfiles || []).map(p => [p.email.toLowerCase(), p.id])
+        );
+
+        const existingUserIds: string[] = [];
+        const nonExistentEmails: string[] = [];
+
+        for (const email of emails) {
+          const userId = existingEmailMap.get(email);
+          if (userId && userId !== user.id) {
+            existingUserIds.push(userId);
+          } else if (!userId) {
+            nonExistentEmails.push(email);
+          }
+        }
+
+        // Add existing users directly to tasting_friends and send friend requests
+        if (existingUserIds.length > 0) {
+          const friendInserts = existingUserIds.map(friend_id => ({
+            tasting_id: createdTasting.id,
+            friend_id,
+          }));
+
+          const { error: friendsError } = await supabase
+            .from("tasting_friends")
+            .insert(friendInserts);
+
+          if (friendsError) {
+            console.error("Error adding existing users to tasting:", friendsError);
+          }
+
+          // Send friend requests for users we're not already friends with
+          for (const friendId of existingUserIds) {
+            // Check if friendship already exists
+            const { data: existingFriendship } = await supabase
+              .from("friendships")
+              .select("id")
+              .or(`and(user_id.eq.${user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`)
+              .maybeSingle();
+
+            if (!existingFriendship) {
+              // Create pending friend request
+              const { error: friendshipError } = await supabase
+                .from("friendships")
+                .insert({
+                  user_id: user.id,
+                  friend_id: friendId,
+                  status: "pending",
+                });
+
+              if (friendshipError) {
+                console.error("Error creating friend request:", friendshipError);
+              }
+            }
+          }
+        }
+
+        // Store non-existent emails in tasting_invites for when they sign up
+        if (nonExistentEmails.length > 0) {
+          const inviteInserts = nonExistentEmails.map(email => ({
+            tasting_id: createdTasting.id,
+            email,
+            invited_by: user.id,
+          }));
+
+          const { error: invitesError } = await supabase
+            .from("tasting_invites")
+            .insert(inviteInserts);
+
+          if (invitesError) {
+            console.error("Error creating tasting invites:", invitesError);
+          }
         }
       }
     }

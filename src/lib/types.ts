@@ -145,6 +145,7 @@ export interface TastingFormData {
   location?: string;
   occasion?: string;
   friend_ids?: string[];
+  pending_invite_emails?: string[];
 }
 
 export interface ExtractedWineData {
@@ -213,6 +214,7 @@ export interface TastingScanSharedData {
   location?: string;
   occasion?: string;
   friend_ids?: string[];
+  pending_invite_emails?: string[];
 }
 
 export interface CreateTastingFromScanInput {

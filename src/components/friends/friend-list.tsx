@@ -1,7 +1,8 @@
 "use client";
 
-import { Users } from "lucide-react";
+import Image from "next/image";
 import { FriendCard } from "./friend-card";
+import { AddFriendForm } from "./add-friend-form";
 import type { FriendWithProfile } from "@/lib/types";
 
 interface FriendListProps {
@@ -12,12 +13,18 @@ export function FriendList({ friends }: FriendListProps) {
   if (friends.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No friends yet</h3>
-        <p className="text-muted-foreground max-w-md">
-          Add friends by their email address to share and discover wines
-          together.
+        <Image
+          src="/winesclinking-nobg.png"
+          alt="Wine glasses clinking"
+          width={200}
+          height={200}
+          className="mb-4 opacity-80"
+        />
+        <h3 className="text-lg font-semibold mb-2">Wine is better shared</h3>
+        <p className="text-muted-foreground max-w-md mb-4">
+          Add friends to share tastings and discover new wines together.
         </p>
+        <AddFriendForm buttonText="Send Your First Invite" />
       </div>
     );
   }

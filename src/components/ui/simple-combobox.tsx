@@ -108,6 +108,18 @@ export function SimpleCombobox({
     onValueChange(newValue ?? "");
   };
 
+  // Intercept input value changes to show labels instead of IDs
+  const handleInputValueChange = (newInputValue: string) => {
+    // If the new input value equals a value (ID), convert it to the label
+    const matchingOption = options.find((o) => o.value === newInputValue)
+      || effectiveOptions.find((o) => o.value === newInputValue);
+    if (matchingOption) {
+      setInputValue(matchingOption.label);
+    } else {
+      setInputValue(newInputValue);
+    }
+  };
+
   // searchPlaceholder kept for API compatibility
   void searchPlaceholder;
 
@@ -123,12 +135,23 @@ export function SimpleCombobox({
     return selectedOption?.label || placeholder;
   }, [renderValue, value, selectedOption, placeholder]);
 
+  // When value or options change externally, update input to show the label
+  React.useEffect(() => {
+    if (value) {
+      const opt = options.find((o) => o.value === value)
+        || effectiveOptions.find((o) => o.value === value);
+      if (opt && inputValue !== opt.label) {
+        setInputValue(opt.label);
+      }
+    }
+  }, [value, options, effectiveOptions]);
+
   return (
     <Combobox
       value={value || null}
       onValueChange={handleValueChange}
       inputValue={inputValue}
-      onInputValueChange={setInputValue}
+      onInputValueChange={handleInputValueChange}
       disabled={disabled}
     >
       <ComboboxInput

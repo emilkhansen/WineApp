@@ -44,6 +44,7 @@ export function MultiTastingReview({
   const [location, setLocation] = useState("");
   const [occasion, setOccasion] = useState("");
   const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [pendingInviteEmails, setPendingInviteEmails] = useState<string[]>([]);
 
   const updateWineRating = (tempId: string, rating: number) => {
     setWines((prev) =>
@@ -121,6 +122,7 @@ export function MultiTastingReview({
           location: location || undefined,
           occasion: occasion || undefined,
           friend_ids: friendIds.length > 0 ? friendIds : undefined,
+          pending_invite_emails: pendingInviteEmails.length > 0 ? pendingInviteEmails : undefined,
         },
         imageUrl
       );
@@ -220,6 +222,8 @@ export function MultiTastingReview({
             <FriendSelector
               selectedFriendIds={friendIds}
               onFriendsChange={setFriendIds}
+              pendingInviteEmails={pendingInviteEmails}
+              onPendingInviteEmailsChange={setPendingInviteEmails}
             />
           </CardContent>
         </Card>
